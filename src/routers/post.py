@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,7 @@ async def create_post(post: Post, db: AsyncSession = Depends(Base.get_db)) -> in
 @router.get("/", response_model=List[Post], status_code=status.HTTP_200_OK)
 async def get_post_list(db: AsyncSession = Depends(Base.get_db)) -> List[Post]:
     result = await db.execute(select(PostModel))
-    posts = result.scalars()._allrows()
+    posts = result.scalars().all()
     return posts
 
 
@@ -34,4 +34,8 @@ async def get_post(post_id: int, db: AsyncSession = Depends(Base.get_db)) -> Pos
                 .where(PostModel.id == post_id)
             )
     post = result.scalars().first()
+    
+    if post == None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Post not found")
+    
     return post
