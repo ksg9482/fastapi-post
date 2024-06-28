@@ -1,8 +1,9 @@
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
 
-from src.routers.post import router as post_router
 from src.database import Base, engine
+from src.routers.post import router as post_router
+
 
 async def app_lifespan(app: FastAPI):
     async with engine.begin() as conn:

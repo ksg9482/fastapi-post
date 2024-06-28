@@ -1,17 +1,16 @@
-from sqlalchemy.orm import sessionmaker, as_declarative, declared_attr
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import as_declarative, declared_attr, sessionmaker
 
-
-DATABASE_URL="sqlite+aiosqlite:///:memory:"
+DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 engine = create_async_engine(DATABASE_URL, echo=True)
 
 
 AsyncSessionLocal = sessionmaker(
     autocommit=False,
-    autoflush=False, 
+    autoflush=False,
     bind=engine,
     class_=AsyncSession,
-    )
+)
 
 
 @as_declarative()
