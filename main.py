@@ -3,6 +3,7 @@ from fastapi import FastAPI
 
 from src.database import Base, engine
 from src.routers.post import router as post_router
+from src.routers.user import router as user_router
 
 
 async def app_lifespan(app: FastAPI):
@@ -15,6 +16,7 @@ async def app_lifespan(app: FastAPI):
 app = FastAPI(lifespan=app_lifespan)
 
 app.include_router(router=post_router)
+app.include_router(router=user_router)
 
 
 if __name__ == "__main__":

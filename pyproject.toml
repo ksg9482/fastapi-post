@@ -16,6 +16,8 @@ black = "^24.4.2"
 pre-commit = "^3.7.1"
 isort = "^5.13.2"
 pycln = "^2.4.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-jose = "^3.3.0"
 
 
 [build-system]
