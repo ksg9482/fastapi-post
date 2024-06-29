@@ -1,7 +1,8 @@
-from sqlalchemy import DateTime, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DateTime, Integer, String, ForeignKey, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
+from src.models.user import User
 
 
 class Post(Base):
@@ -13,3 +14,6 @@ class Post(Base):
     created_at: Mapped[DateTime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
+
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"))
+    user: Mapped[User] = relationship("User", back_populates="posts")

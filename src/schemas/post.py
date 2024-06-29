@@ -10,3 +10,8 @@ class Post(BaseModel):
     title: str
     content: str
     created_at: Optional[datetime] = None
+
+
+class EditPost(BaseModel):
+    title: str
+    content: str
