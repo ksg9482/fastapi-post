@@ -8,11 +8,9 @@ from src.auth import decode_access_token
 def jwt_middleware(func):
     @wraps(func)
     async def wrapper(request: Request, *args, **kwargs):
-        # 미들웨어 로직
         cookies = request.cookies
         if "access_token" in cookies.keys():
             access_token = cookies.get("access_token")
-            print(access_token)
             decoded_token = decode_access_token(access_token)
             request.state.user = decoded_token["data"]
             return await func(request, *args, **kwargs)
