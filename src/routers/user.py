@@ -1,10 +1,10 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.database import Base
+from src.database import get_session
 from src.models.user import User as UserModel
 from src.auth import encode_access_token, hash_password, verify_password
 from src.schemas.user import User, Login, LoginResponse
@@ -14,28 +14,29 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def signup(signup_user: User, db: AsyncSession = Depends(Base.get_db)) -> int:
+async def signup(
+    signup_user: User, session: AsyncSession = Depends(get_session)
+) -> int:
     """
     return signup user id
     """
     hashed_password = hash_password(plain_password=signup_user.password)
     new_user = UserModel(name=signup_user.name, password=hashed_password)
-
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
 
     return new_user.id
 
 
 @router.post("/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
 async def login(
-    response: Response, login_user: Login, db: AsyncSession = Depends(Base.get_db)
+    response: Response, login_user: Login, session: AsyncSession = Depends(get_session)
 ) -> LoginResponse:
-    result = await db.execute(
+    result = await session.exec(
         select(UserModel).where(UserModel.name == login_user.name)
     )
-    user = result.scalars().first()
+    user = result.one()
 
     if not user:
         raise HTTPException(status_code=400, detail="User not exists")
