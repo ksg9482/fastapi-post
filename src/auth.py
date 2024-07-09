@@ -1,25 +1,32 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Union
+from typing import Union
 
 from jose import jwt
 from passlib.context import CryptContext
 
 from src.config import Settings
+from src.schemas.auth import AccessTokenValue
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def encode_access_token(data: dict, expires_delta: timedelta) -> dict:
+def encode_access_token(
+    data: AccessTokenValue, expires_delta: timedelta
+) -> dict[str, str]:
     expire = datetime.now(tz=timezone.utc) + expires_delta
-    payload = {"exp": expire, "data": data}
+    payload = {
+        "exp": expire,
+        "data": data,
+    }
     encoded_jwt = jwt.encode(
         claims=payload, key=Settings.JWT_SECRET_KEY, algorithm=Settings.JWT_ALGORITHM
     )
-    return {"access_token": encoded_jwt}
+    access_token = {"access_token": encoded_jwt}
+    return access_token
 
 
-def decode_access_token(token) -> Dict[str, Union[str, int]]:
+def decode_access_token(token) -> dict[str, Union[str, int]]:
     decoded_jwt = jwt.decode(
         token, key=Settings.JWT_SECRET_KEY, algorithms=Settings.JWT_ALGORITHM
     )
