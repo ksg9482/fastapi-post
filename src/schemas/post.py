@@ -1,17 +1,39 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel
 
 
-class Post(BaseModel):
-    id: Optional[int] = None
-    author: Optional[str] = None
+class CreatePostRequest(BaseModel):
     title: str
     content: str
-    created_at: Optional[datetime] = None
+
+
+class CreatePostResponse(BaseModel):
+    id: int
+    author: str
+    title: str
+    content: str
+    created_at: datetime
+
+
+class PostOneResponse(BaseModel):
+    id: int
+    author: str
+    title: str
+    content: str
+    created_at: datetime
+
+
+class PostsResponse(BaseModel):
+    posts: List[PostOneResponse]
 
 
 class EditPost(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+
+
+class EditPostWhole(BaseModel):
     title: str
     content: str
