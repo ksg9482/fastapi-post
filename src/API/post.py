@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
 from src.schemas.post import (
     EditPost,
@@ -35,8 +36,10 @@ async def create_post(
 
 
 @router.get("/", response_model=PostsResponse, status_code=status.HTTP_200_OK)
-async def get_post_list(service: PostService = Depends(PostService)) -> PostsResponse:
-    posts = await service.post_list()
+async def get_post_list(
+    page: Optional[int] = Query(1), service: PostService = Depends(PostService)
+) -> PostsResponse:
+    posts = await service.post_list(page)
     posts_response = {"posts": posts}
     return posts_response
 
@@ -74,7 +77,7 @@ async def edit_post(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    if not post.user_id == user_id:
+    if not post.author_id == user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 수정할 수 있습니다",
@@ -102,7 +105,7 @@ async def edit_post_whole(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    if not post.user_id == user_id:
+    if not post.author_id == user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 수정할 수 있습니다",
@@ -129,7 +132,7 @@ async def delete_post(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    if not post.user_id == user_id:
+    if not post.author_id == user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 삭제할 수 있습니다",

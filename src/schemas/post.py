@@ -15,6 +15,7 @@ class CreatePostResponse(BaseModel):
     title: str
     content: str
     created_at: datetime
+    updated_at: datetime
 
 
 class PostOneResponse(BaseModel):
@@ -23,6 +24,7 @@ class PostOneResponse(BaseModel):
     title: str
     content: str
     created_at: datetime
+    updated_at: datetime
 
 
 class PostsResponse(BaseModel):
