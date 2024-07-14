@@ -12,5 +12,8 @@ class User(SQLModel, table=True):
     name: str
     password: str
     created_at: datetime = Field(default=func.now())
+    updated_at: datetime = Field(default_factory=func.now)
 
     posts: list["Post"] = Relationship(back_populates="user")
+
+    comments: list["Comment"] = Relationship(back_populates="user")
