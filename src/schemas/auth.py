@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 
-class AccessTokenValue(BaseModel):
+class SessionData(BaseModel):
     id: int
-    name: str
+    nickname: str

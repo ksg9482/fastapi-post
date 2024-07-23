@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class SignUpRequest(BaseModel):
-    name: str
+    nickname: str
     password: str = Field(
         min_length=8,
         description="비밀번호는 8자 이상, 대문자 1자리 이상 포함",
@@ -19,13 +19,13 @@ class SignUpRequest(BaseModel):
 
 class SignUpResponse(BaseModel):
     id: int
-    name: str
+    nickname: str
 
 
 class LoginRequest(BaseModel):
-    name: str
+    nickname: str
     password: str
 
 
 class LoginResponse(BaseModel):
-    access_token: str
+    session_id: str

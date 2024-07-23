@@ -1,6 +1,7 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from src.auth import get_current_user
 from src.schemas.post import (
     EditPost,
     CreatePostRequest,
@@ -9,7 +10,6 @@ from src.schemas.post import (
     PostOneResponse,
     EditPostWhole,
 )
-from src.middlewares import jwt_middleware
 from src.service.post import PostService
 
 router = APIRouter(prefix="/posts", tags=["posts"])
@@ -18,15 +18,14 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 @router.post(
     "/", status_code=status.HTTP_201_CREATED, response_model=CreatePostResponse
 )
-@jwt_middleware
 async def create_post(
-    request: Request,
     post: CreatePostRequest,
     service: PostService = Depends(PostService),
+    current_user=Depends(get_current_user),
 ) -> int:
     # Request에 넣는 방식 잘 안씀 -> 블랙박스라 모르게됨. 주입으로 넣어보기
-    user_id = request.state.user["id"]
-    author = request.state.user["name"]
+    user_id = current_user["id"]
+    author = current_user["nickname"]
 
     new_post = await service.create_post(
         user_id=user_id, author=author, title=post.title, content=post.content
@@ -61,14 +60,13 @@ async def get_post(
 
 
 @router.patch("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-@jwt_middleware
 async def edit_post(
-    request: Request,
     post_id: int,
     edit_post: EditPost,
     service: PostService = Depends(PostService),
+    current_user=Depends(get_current_user),
 ) -> None:
-    user_id = request.state.user["id"]
+    user_id = current_user["id"]
 
     post = await service.post_one(post_id)
 
@@ -89,14 +87,13 @@ async def edit_post(
 
 
 @router.put("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-@jwt_middleware
 async def edit_post_whole(
-    request: Request,
     post_id: int,
     edit_post: EditPostWhole,
     service: PostService = Depends(PostService),
+    current_user=Depends(get_current_user),
 ) -> None:
-    user_id = request.state.user["id"]
+    user_id = current_user["id"]
 
     post = await service.post_one(post_id)
 
@@ -117,13 +114,12 @@ async def edit_post_whole(
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-@jwt_middleware
 async def delete_post(
-    request: Request,
     post_id: int,
     service: PostService = Depends(PostService),
+    current_user=Depends(get_current_user),
 ) -> None:
-    user_id = request.state.user["id"]
+    user_id = current_user["id"]
 
     post = await service.post_one(post_id)
 

@@ -1,6 +1,7 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from src.auth import get_current_user
 from src.schemas.post import (
     PostsResponse,
 )
@@ -10,7 +11,6 @@ from src.schemas.comment import (
     CommentsResponse,
     EditComment,
 )
-from src.middlewares import jwt_middleware
 from src.service.comment import CommentService
 
 router = APIRouter(prefix="/comments", tags=["comments"])
@@ -21,14 +21,13 @@ router = APIRouter(prefix="/comments", tags=["comments"])
     status_code=status.HTTP_201_CREATED,
     response_model=CreateCommentResponse,
 )
-@jwt_middleware
 async def create_comment(
-    request: Request,
     post_id: int,
     comment: CreateCommentRequest,
     service: CommentService = Depends(CommentService),
+    current_user=Depends(get_current_user),
 ) -> int:
-    user_id = request.state.user["id"]
+    user_id = current_user["id"]
 
     new_comment = await service.create_comment(
         user_id=user_id, post_id=post_id, content=comment.content
@@ -66,14 +65,13 @@ async def get_comment_list_by_user(
 
 
 @router.patch("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-@jwt_middleware
 async def edit_comment(
-    request: Request,
     comment_id: int,
     edit_comment: EditComment,
     service: CommentService = Depends(CommentService),
+    current_user=Depends(get_current_user),
 ) -> None:
-    user_id = request.state.user["id"]
+    user_id = current_user["id"]
 
     comment = await service.comment_one(comment_id)
 
@@ -94,13 +92,12 @@ async def edit_comment(
 
 
 @router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
-@jwt_middleware
 async def delete_comment(
-    request: Request,
     comment_id: int,
     service: CommentService = Depends(CommentService),
+    current_user=Depends(get_current_user),
 ) -> None:
-    user_id = request.state.user["id"]
+    user_id = current_user["id"]
 
     comment = await service.comment_one(comment_id)
 
