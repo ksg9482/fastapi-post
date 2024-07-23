@@ -32,7 +32,10 @@ class PostService:
     async def post_list(self, page: int) -> List[Post]:
         offset = (page - 1) * self.items_per_page
         result = await self.session.exec(
-            select(Post, User.name).join(User).offset(offset).limit(self.items_per_page)
+            select(Post, User.nickname)
+            .join(User)
+            .offset(offset)
+            .limit(self.items_per_page)
         )
         posts = result.all()
         """
@@ -49,7 +52,7 @@ class PostService:
 
     async def post_one(self, post_id: int) -> Post | None:
         result = await self.session.exec(
-            select(Post, User.name).join(User).where(Post.id == post_id)
+            select(Post, User.nickname).join(User).where(Post.id == post_id)
         )
         post, author_name = result.first()
         post.author = author_name
