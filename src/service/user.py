@@ -12,9 +12,9 @@ class UserService:
     def __init__(self, session: AsyncSession = Depends(get_session)) -> None:
         self.session = session
 
-    async def signup_account(self, name: str, password: str) -> User:
+    async def signup_account(self, nickname: str, password: str) -> User:
         hashed_password = hash_password(plain_password=password)
-        new_user = User(name=name, password=hashed_password)
+        new_user = User(nickname=nickname, password=hashed_password)
 
         self.session.add(new_user)
         await self.session.commit()
@@ -22,8 +22,8 @@ class UserService:
 
         return new_user
 
-    async def find_user_by_name(self, name: str) -> User | None:
-        result = await self.session.exec(select(User).where(User.name == name))
+    async def find_user_by_name(self, nickname: str) -> User | None:
+        result = await self.session.exec(select(User).where(User.nickname == nickname))
         user = result.first()
 
         return user
