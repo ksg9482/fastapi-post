@@ -15,7 +15,7 @@ async def signup(
     signup_user: SignUpRequest, service: UserService = Depends(UserService)
 ) -> SignUpResponse:
     new_user = await service.signup_account(
-        name=signup_user.name, password=signup_user.password
+        nickname=signup_user.nickname, password=signup_user.password
     )
 
     return new_user
@@ -27,7 +27,7 @@ async def login(
     login_user: LoginRequest,
     service: UserService = Depends(UserService),
 ) -> LoginResponse:
-    user = await service.find_user_by_name(login_user.name)
+    user = await service.find_user_by_name(login_user.nickname)
 
     if not user:
         raise HTTPException(status_code=400, detail="User not exists")
@@ -37,7 +37,7 @@ async def login(
 
     token_value = {
         "id": user.id,
-        "name": user.name,
+        "nickname": user.nickname,
     }
     access_token = encode_access_token(token_value, timedelta(hours=1))
     response.set_cookie(
@@ -45,3 +45,7 @@ async def login(
     )
 
     return access_token
+
+
+async def logout():
+    return

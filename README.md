@@ -57,7 +57,7 @@ erDiagram
     USER ||--o{ COMMENT: ""
     USER {
         int id PK "유저 ID"
-        str name "유저명"
+        str nickname "유저닉네임"
         str password "유저 비밀번호"
         datetime created_at "포스트 생성일자"
         datetime updated_at "포스트 갱신일자"
