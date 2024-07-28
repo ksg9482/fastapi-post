@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
@@ -9,6 +10,7 @@ DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 engine = AsyncEngine(create_engine(DATABASE_URL, echo=True, future=True))
 
 
+@asynccontextmanager
 async def db_init(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
