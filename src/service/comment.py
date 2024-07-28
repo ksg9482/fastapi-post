@@ -6,7 +6,6 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database import get_session
-from src.domain.post import Post
 from src.domain.comment import Comment
 
 
@@ -36,7 +35,7 @@ class CommentService:
     async def comment_list_by_user(self, user_id: int, page: int) -> List[Comment]:
         offset = (page - 1) * self.items_per_page
         result = await self.session.exec(
-            select(Post)
+            select(Comment)
             .where(Comment.author_id == user_id)
             .offset(offset)
             .limit(self.items_per_page)
