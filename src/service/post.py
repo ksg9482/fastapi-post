@@ -50,11 +50,16 @@ class PostService:
 
         return author_include_posts
 
-    async def post_one(self, post_id: int) -> Post | None:
+    async def post_find_one(self, post_id: int) -> Post | None:
         result = await self.session.exec(
             select(Post, User.nickname).join(User).where(Post.id == post_id)
         )
-        post, author_name = result.first()
+
+        result_data = result.first()
+        if not result_data:
+            return None
+
+        post, author_name = result_data
         post.author = author_name
         return post
 

@@ -20,6 +20,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def signup(
     signup_user: SignUpRequest, service: UserService = Depends(UserService)
 ) -> SignUpResponse:
+    user = await service.find_user_by_name(signup_user.nickname)
+
+    if user:
+        raise HTTPException(status_code=400, detail="이미 가입한 유저입니다")
+
     new_user = await service.signup_account(
         nickname=signup_user.nickname, password=signup_user.password
     )
@@ -37,10 +42,12 @@ async def login(
     user = await service.find_user_by_name(login_user.nickname)
 
     if not user:
-        raise HTTPException(status_code=400, detail="User not exists")
+        raise HTTPException(status_code=400, detail="존재하지 않는 유저입니다")
 
-    if not verify_password(user.password):
-        raise HTTPException(status_code=400, detail="Invalid password")
+    if not verify_password(
+        plain_password=login_user.password, hashed_password=user.password
+    ):
+        raise HTTPException(status_code=400, detail="잘못된 비밀번호입니다")
 
     session_value = {
         "id": user.id,
@@ -60,6 +67,7 @@ async def login(
     return {"session_id": new_session_id}
 
 
+@router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(session_id: Optional[str] = Cookie(None)) -> None:
     delete_session(session_id)
     return

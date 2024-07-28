@@ -1,4 +1,5 @@
 import re
+from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -13,7 +14,10 @@ class SignUpRequest(BaseModel):
     @classmethod
     def check_uppercase(cls, v):
         if not re.search(r"[A-Z]", v):
-            raise ValueError("문자열에 대문자가 하나 이상 포함되어야 합니다")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="문자열에 대문자가 하나 이상 포함되어야 합니다",
+            )
         return v
 
 
