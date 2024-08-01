@@ -6,7 +6,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database import get_session
-from src.domain.post import Post
+from src.domain.post import Post, Content
 from src.domain.user import User
 
 
@@ -18,14 +18,12 @@ class PostService:
     async def create_post(
         self, user_id: int, author: str, title: str, content: str
     ) -> Post:
-        new_post = Post(author_id=user_id, title=title, content=content)
+        post_content = Content(content=content)
+        new_post = Post(author_id=user_id, title=title, content=post_content)
         self.session.add(new_post)
+
         await self.session.commit()
         await self.session.refresh(new_post)
-
-        # 도메인 모델과 엔티티 모델은 author에 차이가 있음.
-        # 추가가 필요하면 필요한 곳이 넣는게 맞다고 판단.
-        new_post.author = author
 
         return new_post
 
