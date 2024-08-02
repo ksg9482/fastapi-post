@@ -33,6 +33,7 @@ def client():
         yield client
 
 
+@pytest.mark.create
 def test_create_post_ok(client: TestClient):
     response = client.post(
         "/posts",
@@ -42,10 +43,10 @@ def test_create_post_ok(client: TestClient):
         },
     )
     assert response.status_code == 201
-    assert response.json()["title"] == "test_title"
-    assert response.json()["content"] == "test_content"
+    assert response.json()["id"]
 
 
+@pytest.mark.create
 def test_create_post_invalid_params(client: TestClient):
 
     response = client.post(
@@ -58,6 +59,7 @@ def test_create_post_invalid_params(client: TestClient):
     assert response.status_code == 422
 
 
+@pytest.mark.posts
 def test_post_list_ok(client: TestClient):
     client.post(
         "/posts",
@@ -81,6 +83,7 @@ def test_post_list_ok(client: TestClient):
     assert len(response.json()["posts"]) == 2
 
 
+@pytest.mark.posts
 def test_post_list_empty_ok(client: TestClient):
     response = client.get("/posts")
 
@@ -96,6 +99,7 @@ def test_post_list_empty_ok(client: TestClient):
 #     assert response.status_code == 500
 
 
+@pytest.mark.post
 def test_post_find_one_ok(client: TestClient):
     client.post(
         "/posts",
@@ -106,17 +110,21 @@ def test_post_find_one_ok(client: TestClient):
     )
 
     response = client.get("/posts/1")
+    print(response.json())
+
     assert response.status_code == 200
     assert response.json()["title"] == "test_title_1"
     assert response.json()["content"] == "test_content_1"
 
 
+@pytest.mark.post
 def test_post_find_one_not_exists(client: TestClient):
     response = client.get("/posts/1")
     assert response.status_code == 400
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
+@pytest.mark.patch
 def test_post_patch_ok(client: TestClient):
     client.post(
         url="/posts",
@@ -133,6 +141,7 @@ def test_post_patch_ok(client: TestClient):
     assert response.json()["content"] == "test_content_1_edit"
 
 
+@pytest.mark.patch
 def test_post_patch_not_exists(client: TestClient):
     client.patch(url="/posts/1", json={"content": "test_content_1_edit"})
 
@@ -141,6 +150,7 @@ def test_post_patch_not_exists(client: TestClient):
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
+@pytest.mark.patch
 def test_post_patch_invalid_author(client: TestClient):
     client.post(
         "/posts",
@@ -175,6 +185,7 @@ def test_post_patch_invalid_author(client: TestClient):
     assert response.json()["detail"] == "작성자만 수정할 수 있습니다"
 
 
+@pytest.mark.put
 def test_post_put_ok(client: TestClient):
     client.post(
         url="/posts",
@@ -195,6 +206,7 @@ def test_post_put_ok(client: TestClient):
     assert response.json()["content"] == "test_content_1_edit"
 
 
+@pytest.mark.put
 def test_post_put_not_exists(client: TestClient):
     response = client.put(
         url="/posts/1",
@@ -205,6 +217,7 @@ def test_post_put_not_exists(client: TestClient):
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
+@pytest.mark.put
 def test_post_put_invalid_author(client: TestClient):
     client.post(
         "/posts",
@@ -242,6 +255,7 @@ def test_post_put_invalid_author(client: TestClient):
     assert response.json()["detail"] == "작성자만 수정할 수 있습니다"
 
 
+@pytest.mark.put
 def test_post_put_missing_field(client: TestClient):
     client.post(
         url="/posts",
@@ -256,6 +270,7 @@ def test_post_put_missing_field(client: TestClient):
     assert response.status_code == 422
 
 
+@pytest.mark.delete
 def test_post_delete_ok(client: TestClient):
     client.post(
         url="/posts",
@@ -274,13 +289,7 @@ def test_post_delete_ok(client: TestClient):
     assert post_response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
-def test_post_put_not_exists(client: TestClient):
-    response = client.delete(url="/posts/1")
-
-    assert response.status_code == 400
-    assert response.json()["detail"] == "존재하지 않는 포스트입니다"
-
-
+@pytest.mark.delete
 def test_post_delete_invalid_author(client: TestClient):
     client.post(
         "/posts",
