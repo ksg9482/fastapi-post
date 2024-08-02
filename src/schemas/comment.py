@@ -27,7 +27,7 @@ class CommentOneResponse(BaseModel):
 
 
 class CommentsResponse(BaseModel):
-    posts: List[CommentOneResponse]
+    comments: List[CommentOneResponse]
 
 
 class EditComment(BaseModel):
