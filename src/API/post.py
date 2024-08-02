@@ -25,10 +25,9 @@ async def create_post(
 ) -> int:
     # Request에 넣는 방식 잘 안씀 -> 블랙박스라 모르게됨. 주입으로 넣는 방식 채택
     user_id = current_user["id"]
-    author = current_user["nickname"]
 
     new_post = await service.create_post(
-        user_id=user_id, author=author, title=post.title, content=post.content
+        user_id=user_id, title=post.title, content=post.content
     )
 
     return new_post
@@ -50,12 +49,13 @@ async def get_post(
     post_id: int, service: PostService = Depends(PostService)
 ) -> PostOneResponse:
     post = await service.post_find_one(post_id)
-
     if not post:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
+    post.author = post.user.nickname
+    post.content = post.post_content.content
     return post
 
 
