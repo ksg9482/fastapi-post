@@ -11,18 +11,13 @@ class CreatePostRequest(BaseModel):
 
 class CreatePostResponse(BaseModel):
     id: int
-    author: str
-    title: str
-    content: str
-    created_at: datetime
-    updated_at: datetime
 
 
 class PostOneResponse(BaseModel):
     id: int
     author: str
     title: str
-    content: str
+    content: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
