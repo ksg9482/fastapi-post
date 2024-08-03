@@ -49,10 +49,7 @@ async def login(
     ):
         raise HTTPException(status_code=400, detail="잘못된 비밀번호입니다")
 
-    session_value = {
-        "id": user.id,
-        "nickname": user.nickname,
-    }
+    session_value = {"id": user.id, "nickname": user.nickname, "role": user.role}
     session = find_session(session_id)
     new_session_id = session_id if session else generate_session_id()
 

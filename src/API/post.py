@@ -11,6 +11,7 @@ from src.schemas.post import (
     EditPostWhole,
 )
 from src.service.post import PostService
+from src.domain.user import Role
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -67,6 +68,7 @@ async def edit_post(
     current_user=Depends(get_current_user),
 ) -> None:
     user_id = current_user["id"]
+    user_role = current_user["role"]
 
     post = await service.post_find_one(post_id)
 
@@ -75,7 +77,7 @@ async def edit_post(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    if not post.author_id == user_id:
+    if (not post.author_id == user_id) and (not user_role == Role.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 수정할 수 있습니다",
@@ -94,6 +96,7 @@ async def edit_post_whole(
     current_user=Depends(get_current_user),
 ) -> None:
     user_id = current_user["id"]
+    user_role = current_user["role"]
 
     post = await service.post_find_one(post_id)
 
@@ -102,7 +105,7 @@ async def edit_post_whole(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    if not post.author_id == user_id:
+    if (not post.author_id == user_id) and (not user_role == Role.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 수정할 수 있습니다",
@@ -120,6 +123,7 @@ async def delete_post(
     current_user=Depends(get_current_user),
 ) -> None:
     user_id = current_user["id"]
+    user_role = current_user["role"]
 
     post = await service.post_find_one(post_id)
 
@@ -128,7 +132,7 @@ async def delete_post(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    if not post.author_id == user_id:
+    if (not post.author_id == user_id) and (not user_role == Role.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 삭제할 수 있습니다",
