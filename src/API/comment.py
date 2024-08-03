@@ -13,6 +13,7 @@ from src.schemas.comment import (
 )
 from src.service.comment import CommentService
 from src.service.post import PostService
+from src.domain.user import Role
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
@@ -88,6 +89,7 @@ async def edit_comment(
     current_user=Depends(get_current_user),
 ) -> None:
     user_id = current_user["id"]
+    user_role = current_user["role"]
 
     comment = await service.comment_one(comment_id)
 
@@ -96,7 +98,7 @@ async def edit_comment(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 코멘트입니다"
         )
 
-    if not comment.author_id == user_id:
+    if (not comment.author_id == user_id) and (not user_role == Role.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 수정할 수 있습니다",
@@ -114,6 +116,7 @@ async def delete_comment(
     current_user=Depends(get_current_user),
 ) -> None:
     user_id = current_user["id"]
+    user_role = current_user["role"]
 
     comment = await service.comment_one(comment_id)
 
@@ -122,7 +125,7 @@ async def delete_comment(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 코멘트입니다"
         )
 
-    if not comment.author_id == user_id:
+    if (not comment.author_id == user_id) and (not user_role == Role.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="작성자만 삭제할 수 있습니다",

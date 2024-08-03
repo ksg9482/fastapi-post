@@ -2,6 +2,8 @@ import re
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
+from src.domain.user import Role
+
 
 class SignUpRequest(BaseModel):
     nickname: str
@@ -9,6 +11,7 @@ class SignUpRequest(BaseModel):
         min_length=8,
         description="비밀번호는 8자 이상, 대문자 1자리 이상 포함",
     )
+    role: Role = Field(default=Role.member)
 
     @field_validator("password", mode="after")
     @classmethod
