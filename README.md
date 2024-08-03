@@ -70,3 +70,34 @@ erDiagram
         int post_id FK ""
     }
 ```
+
+## TEST
+### E2E Test
+```
+pytest
+```
+### Test Coverage
+```
+Name                            Stmts   Miss  Cover
+---------------------------------------------------
+main.py                            12      1    92%
+src\API\comment.py                 49     20    59%
+src\API\post.py                    58     26    55%
+src\API\user.py                    31     14    55%
+src\auth.py                        31      1    97%
+src\database.py                    18      0   100%
+src\domain\comment.py              13      0   100%
+src\domain\post.py                 31      0   100%
+src\domain\user.py                 15      0   100%
+src\schemas\comment.py             23      0   100%
+src\schemas\post.py                23      0   100%
+src\schemas\user.py                22      0   100%
+src\service\comment.py             38      8    79%
+src\service\post.py                47     16    66%
+src\service\user.py                20      4    80%
+tests\e2e\test_comment_e2e.py     109      0   100%
+tests\e2e\test_post_e2e.py        107      0   100%
+tests\e2e\test_user_e2e.py         65      0   100%
+---------------------------------------------------
+TOTAL                             712     90    87%
+```
