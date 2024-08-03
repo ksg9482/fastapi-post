@@ -1,10 +1,12 @@
 from fastapi.testclient import TestClient
 
 from fastapi.testclient import TestClient
+import pytest
 
 from main import app
 
 
+@pytest.mark.create
 def test_signup_user_ok():
     with TestClient(app) as client:
         response = client.post(
@@ -18,6 +20,7 @@ def test_signup_user_ok():
         assert response.json() == {"id": 1, "nickname": "test_user"}
 
 
+@pytest.mark.create
 def test_signup_user_not_upper():
     with TestClient(app) as client:
         response = client.post(
@@ -33,6 +36,7 @@ def test_signup_user_not_upper():
         )
 
 
+@pytest.mark.create
 def test_signup_user_invalid_params():
     with TestClient(app) as client:
         response = client.post(
@@ -46,6 +50,7 @@ def test_signup_user_invalid_params():
         # assert response.json()['detail'] == "문자열에 대문자가 하나 이상 포함되어야 합니다"
 
 
+@pytest.mark.create
 def test_signup_user_duplicate():
     with TestClient(app) as client:
         client.post(
@@ -67,6 +72,7 @@ def test_signup_user_duplicate():
         assert response.json()["detail"] == "이미 가입한 유저입니다"
 
 
+@pytest.mark.login
 def test_login_ok():
     with TestClient(app) as client:
         client.post(
@@ -88,6 +94,7 @@ def test_login_ok():
         assert response.json()["session_id"]
 
 
+@pytest.mark.login
 def test_login_invalid_nikcname():
     with TestClient(app) as client:
         client.post(
@@ -109,6 +116,7 @@ def test_login_invalid_nikcname():
         assert response.json()["detail"] == "존재하지 않는 유저입니다"
 
 
+@pytest.mark.login
 def test_login_invalid_password():
     with TestClient(app) as client:
         client.post(
@@ -130,6 +138,7 @@ def test_login_invalid_password():
         assert response.json()["detail"] == "잘못된 비밀번호입니다"
 
 
+@pytest.mark.logout
 def test_logout_ok():
     with TestClient(app) as client:
         client.post(
@@ -153,6 +162,7 @@ def test_logout_ok():
         assert response.status_code == 200
 
 
+@pytest.mark.logout
 def test_logout_invalid_session_id():
     with TestClient(app) as client:
         client.post(
