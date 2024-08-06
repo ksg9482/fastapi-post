@@ -9,6 +9,8 @@ from src.domain.user import User
 
 
 class PostContent(SQLModel, table=True):
+    # TODO: id는 아직 결정되지 않았는데, type hint에 | None을 추가해야하지 않을까?
+    # primary 키의 경우, index=True가 필요 없음.
     id: int = Field(primary_key=True, index=True)
     content: str
     created_at: datetime = Field(default=func.now())
