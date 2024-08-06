@@ -9,6 +9,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 session_data = {}
 
 
+# TODO: type hint 추가
 def generate_session_id():
     return str(uuid4())
 
@@ -42,11 +43,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(secret=plain_password, hash=hashed_password)
 
 
+# TODO: Type hint에 None이 필요가 없을 듯?
 def get_current_user(session_id: Optional[str] = Cookie(None)) -> dict | None:
     session_data = find_session(session_id)
     is_expired = datetime.now(tz=timezone.utc) >= session_data["expire"]
     if (session_id is None) or (session_data is None) or is_expired:
         raise HTTPException(
+            # TODO: 좀 더 좋은 에러 메시지는 뭘까?
             status_code=status.HTTP_401_UNAUTHORIZED, detail="세션이 유효하지 않습니다"
         )
     return session_data
