@@ -47,10 +47,18 @@ erDiagram
     POST {
         int id PK "포스트 ID"
         str title "포스트 제목"
-        str content "포스트 내용"
+        int author_id FK "작성자 ID"
+        int content_id FK "포스트 내용 ID"
         datetime created_at "포스트 생성일자"
         datetime updated_at "포스트 갱신일자"
-        int author_id FK "작성자 ID"
+    }
+
+    POST ||--|| POSTCONTENT:""
+    POSTCONTENT {
+        int id PK "포스트 ID"
+        str content "포스트 내용"
+        datetime created_at "포스트 내용 생성일자"
+        datetime updated_at "포스트 내용 갱신일자"
     }
     
     USER ||--o{ POST: ""
@@ -64,10 +72,12 @@ erDiagram
     }
 
     COMMENT {
-        int id PK ""
-        str content ""
-        int author_id FK ""
-        int post_id FK ""
+        int id PK "코멘트 ID"
+        str content "코멘트 내용"
+        int author_id FK "작성자 ID"
+        int post_id FK "포스트 ID"
+        datetime created_at "코멘트 생성일자"
+        datetime updated_at "코멘트 갱신일자"
     }
 ```
 
