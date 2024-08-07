@@ -10,8 +10,8 @@ from src.schemas.post import (
     PostOneResponse,
     EditPostWhole,
 )
-from src.service.post import PostService
-from src.domain.user import Role
+from src.servicies.post import PostService
+from src.domains.user import Role
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 

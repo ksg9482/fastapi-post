@@ -10,7 +10,7 @@ from src.auth import (
     verify_password,
 )
 from src.schemas.user import LoginRequest, LoginResponse, SignUpRequest, SignUpResponse
-from src.service.user import UserService
+from src.servicies.user import UserService
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -19,7 +19,8 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=SignUpResponse)
 async def signup(
     # TODO: 일관성 있게 변수 이름 짓기
-    signup_user: SignUpRequest, service: UserService = Depends(UserService)
+    signup_user: SignUpRequest,
+    service: UserService = Depends(UserService),
 ) -> SignUpResponse:
     user = await service.find_user_by_name(signup_user.nickname)
 
