@@ -2,7 +2,7 @@ import re
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
-from src.domain.user import Role
+from src.domains.user import Role
 
 
 class SignUpRequest(BaseModel):

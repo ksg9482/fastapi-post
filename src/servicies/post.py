@@ -6,8 +6,8 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database import get_session
-from src.domain.post import Post, PostContent
-from src.domain.user import User
+from src.domains.post import Post, PostContent
+from src.domains.user import User
 
 
 class PostService:

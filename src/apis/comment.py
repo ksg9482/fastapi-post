@@ -11,9 +11,9 @@ from src.schemas.comment import (
     CommentsResponse,
     EditComment,
 )
-from src.service.comment import CommentService
-from src.service.post import PostService
-from src.domain.user import Role
+from src.servicies.comment import CommentService
+from src.servicies.post import PostService
+from src.domains.user import Role
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 

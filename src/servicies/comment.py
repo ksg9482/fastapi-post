@@ -6,7 +6,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database import get_session
-from src.domain.comment import Comment
+from src.domains.comment import Comment
 
 
 class CommentService:

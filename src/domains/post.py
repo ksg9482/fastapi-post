@@ -5,7 +5,7 @@ from sqlmodel import (
     Relationship,
     func,
 )
-from src.domain.user import User
+from src.domains.user import User
 
 
 class PostContent(SQLModel, table=True):
