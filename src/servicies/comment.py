@@ -30,6 +30,7 @@ class CommentService:
             .limit(self.items_per_page)
         )
         comments = result.all()
+
         return list(comments)
 
     async def comment_list_by_user(self, user_id: int, page: int) -> List[Comment]:

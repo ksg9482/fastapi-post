@@ -6,7 +6,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database import get_session
-from src.domains.post import Post, PostContent
+from src.domains.post import Post
 from src.domains.user import User
 
 
@@ -16,8 +16,7 @@ class PostService:
         self.items_per_page = 20
 
     async def create_post(self, user_id: int, title: str, content: str) -> Post:
-        post_content = PostContent(content=content)
-        new_post = Post(author_id=user_id, title=title, post_content=post_content)
+        new_post = Post(author_id=user_id, title=title, content=content)
 
         self.session.add(new_post)
         await self.session.commit()
@@ -30,7 +29,6 @@ class PostService:
         result = await self.session.exec(
             select(Post, User.nickname)
             .join(User)
-            .join(PostContent)
             .offset(offset)
             .limit(self.items_per_page)
         )
@@ -49,19 +47,15 @@ class PostService:
 
     async def post_find_one(self, post_id: int) -> Post | None:
         result = await self.session.exec(
-            select(Post, User, PostContent)
-            .join(User)
-            .join(PostContent)
-            .where(Post.id == post_id)
+            select(Post, User).join(User).where(Post.id == post_id)
         )
 
         result_data = result.first()
         if not result_data:
             return None
 
-        post, user, post_content = result_data
+        post, user = result_data
         post.user = user
-        post.content = post_content
         return post
 
     async def edit_post(
@@ -70,7 +64,7 @@ class PostService:
         if title:
             post.title = title
         if content:
-            post.post_content.content = content
+            post.content = content
 
         self.session.add(post)
         await self.session.commit()
