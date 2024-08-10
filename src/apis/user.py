@@ -18,42 +18,43 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=SignUpResponse)
 async def signup(
-    # TODO: 일관성 있게 변수 이름 짓기
-    signup_user: SignUpRequest,
+    request: SignUpRequest,
     service: UserService = Depends(UserService),
 ) -> SignUpResponse:
-    user = await service.find_user_by_name(signup_user.nickname)
+    user = await service.find_user_by_name(request.nickname)
 
     if user:
-        # TODO: 더 적합한 HTTP 상태 코드는 없을까?
-        raise HTTPException(status_code=400, detail="이미 가입한 유저입니다")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="이미 가입한 유저입니다"
+        )
 
     new_user = await service.signup_account(
-        nickname=signup_user.nickname, password=signup_user.password
+        nickname=request.nickname, password=request.password
     )
 
-    # TODO: 좀 더 안전하게 내보내는 방법은 없을까?
-    return new_user
+    return SignUpResponse(id=new_user.id, nickname=new_user.nickname)
 
 
 @router.post("/login", response_model=LoginResponse, status_code=status.HTTP_200_OK)
 async def login(
     response: Response,
-    login_user: LoginRequest,
+    request: LoginRequest,
     service: UserService = Depends(UserService),
     session_id: Optional[str] = Cookie(None),
 ) -> LoginResponse:
-    user = await service.find_user_by_name(login_user.nickname)
+    user = await service.find_user_by_name(request.nickname)
 
     if not user:
-        # TODO: 더 적합한 HTTP 상태 코드는 없을까? 401? 403? 404?
-        raise HTTPException(status_code=400, detail="존재하지 않는 유저입니다")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="존재하지 않는 유저입니다"
+        )
 
     if not verify_password(
-        plain_password=login_user.password, hashed_password=user.password
+        plain_password=request.password, hashed_password=user.password
     ):
-        # TODO: 더 적합한 HTTP 상태 코드는 없을까? 401? 403? 404?
-        raise HTTPException(status_code=400, detail="잘못된 비밀번호입니다")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="잘못된 비밀번호입니다"
+        )
 
     session_value = {"id": user.id, "nickname": user.nickname, "role": user.role}
     session = find_session(session_id)
@@ -67,10 +68,9 @@ async def login(
 
     response.set_cookie(key="session_id", value=new_session_id, httponly=True)
 
-    return {"session_id": new_session_id}
+    return LoginResponse(session_id=new_session_id)
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
 async def logout(session_id: Optional[str] = Cookie(None)) -> None:
     delete_session(session_id)
-    return
