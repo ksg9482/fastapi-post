@@ -1,11 +1,12 @@
 from datetime import datetime
+from typing import Optional
 from sqlmodel import Field, SQLModel, Relationship, func
 from src.domains.user import User
 from src.domains.post import Post
 
 
 class Comment(SQLModel, table=True):
-    id: int = Field(primary_key=True, index=True)
+    id: Optional[int] = Field(primary_key=True)
     content: str
     created_at: datetime = Field(default=func.now())
     updated_at: datetime = Field(default_factory=func.now)
