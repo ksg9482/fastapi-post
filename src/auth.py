@@ -9,9 +9,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 session_data = {}
 
 
-# TODO: type hint 추가
-def generate_session_id():
-    return str(uuid4())
+def generate_session_id() -> str:
+    return str(uuid4())  # uuld로
 
 
 def insert_session(session_id: str, content: dict, expires_delta: timedelta) -> str:
@@ -43,13 +42,24 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(secret=plain_password, hash=hashed_password)
 
 
-# TODO: Type hint에 None이 필요가 없을 듯?
-def get_current_user(session_id: Optional[str] = Cookie(None)) -> dict | None:
-    session_data = find_session(session_id)
-    is_expired = datetime.now(tz=timezone.utc) >= session_data["expire"]
-    if (session_id is None) or (session_data is None) or is_expired:
+def get_current_user(session_id: Optional[str] = Cookie(None)) -> dict:
+    if session_id is None:
         raise HTTPException(
-            # TODO: 좀 더 좋은 에러 메시지는 뭘까?
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="세션이 유효하지 않습니다"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="세션 아이디가 입력되지 않았습니다. 다시 로그인 해 주세요",
+        )
+
+    session_data = find_session(session_id)
+    if session_data is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="존재하지 않는 세션입니다. 다시 로그인 해 주세요",
+        )
+
+    is_expired = datetime.now(tz=timezone.utc) >= session_data["expire"]
+    if is_expired:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="만료된 세션입니다. 다시 로그인 해주세요",
         )
     return session_data
