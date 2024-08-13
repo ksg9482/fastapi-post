@@ -6,7 +6,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.database import get_session
-from src.domain.comment import Comment
+from src.domains.comment import Comment
 
 
 class CommentService:
@@ -30,6 +30,7 @@ class CommentService:
             .limit(self.items_per_page)
         )
         comments = result.all()
+
         return list(comments)
 
     async def comment_list_by_user(self, user_id: int, page: int) -> List[Comment]:

@@ -53,14 +53,6 @@ erDiagram
         datetime updated_at "포스트 갱신일자"
     }
 
-    POST ||--|| POSTCONTENT:""
-    POSTCONTENT {
-        int id PK "포스트 ID"
-        str content "포스트 내용"
-        datetime created_at "포스트 내용 생성일자"
-        datetime updated_at "포스트 내용 갱신일자"
-    }
-    
     USER ||--o{ POST: ""
     USER ||--o{ COMMENT: ""
     USER {

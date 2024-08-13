@@ -26,11 +26,11 @@ class PostsResponse(BaseModel):
     posts: List[PostOneResponse]
 
 
-class EditPost(BaseModel):
+class EditPostRequest(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
 
 
-class EditPostWhole(BaseModel):
+class EditPostWholeRequest(BaseModel):
     title: str
     content: str
