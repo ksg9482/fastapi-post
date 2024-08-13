@@ -91,14 +91,6 @@ def test_post_list_empty_ok(client: TestClient):
     assert len(response.json()["posts"]) == 0
 
 
-# 없는거 로직을 넣어야 하나?
-# def test_post_list_fail(client: TestClient):
-#     response = client.get(
-#         "/posts"
-#     )
-#     assert response.status_code == 500
-
-
 @pytest.mark.post
 def test_post_find_one_ok(client: TestClient):
     client.post(
@@ -182,7 +174,7 @@ def test_post_patch_invalid_author(client: TestClient):
     response = client.patch(url="/posts/1", json={"content": "test_content_1_edit"})
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "작성자만 수정할 수 있습니다"
+    assert response.json()["detail"] == "작성자 또는 관리자만 수정할 수 있습니다"
 
 
 @pytest.mark.put
@@ -227,7 +219,6 @@ def test_post_put_invalid_author(client: TestClient):
         },
     )
 
-    # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     client.post(
         "/users",
         json={
@@ -244,15 +235,13 @@ def test_post_put_invalid_author(client: TestClient):
         },
     )
 
-    # 쿠키에 이미 변경된 아이디가 들어있음. 명시로 다시 넣어주는게 좋은가?
-
     response = client.put(
         url="/posts/1",
         json={"title": "test_title_1_edit", "content": "test_content_1_edit"},
     )
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "작성자만 수정할 수 있습니다"
+    assert response.json()["detail"] == "작성자 또는 관리자만 수정할 수 있습니다"
 
 
 @pytest.mark.put
@@ -299,7 +288,6 @@ def test_post_delete_invalid_author(client: TestClient):
         },
     )
 
-    # 다른 아이디로 삭제 시도. 세션아이디 변경 됨
     client.post(
         "/users",
         json={
@@ -316,9 +304,7 @@ def test_post_delete_invalid_author(client: TestClient):
         },
     )
 
-    # 쿠키에 이미 변경된 아이디가 들어있음. 명시로 다시 넣어주는게 좋은가?
-
     response = client.delete(url="/posts/1")
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "작성자만 삭제할 수 있습니다"
+    assert response.json()["detail"] == "작성자 또는 관리자만 삭제할 수 있습니다"

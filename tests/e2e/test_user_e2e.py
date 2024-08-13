@@ -47,7 +47,6 @@ def test_signup_user_invalid_params():
             },
         )
         assert response.status_code == 422
-        # assert response.json()['detail'] == "문자열에 대문자가 하나 이상 포함되어야 합니다"
 
 
 @pytest.mark.create
@@ -68,7 +67,7 @@ def test_signup_user_duplicate():
                 "password": "Test_password",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 409
         assert response.json()["detail"] == "이미 가입한 유저입니다"
 
 
@@ -112,7 +111,7 @@ def test_login_invalid_nikcname():
                 "password": "Test_password",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 401
         assert response.json()["detail"] == "존재하지 않는 유저입니다"
 
 
@@ -134,7 +133,7 @@ def test_login_invalid_password():
                 "password": "invalid_password",
             },
         )
-        assert response.status_code == 400
+        assert response.status_code == 401
         assert response.json()["detail"] == "잘못된 비밀번호입니다"
 
 

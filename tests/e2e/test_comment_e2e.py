@@ -25,11 +25,6 @@ def client():
             },
         )
 
-        # 명시해야 하나??
-        # client.cookies = {
-        #     "session_id": response.json()['session_id']
-        # }
-
         # 미리 post 생성
         client.post(
             "/posts",
@@ -87,7 +82,6 @@ def test_create_comment_post_not_exists(client: TestClient):
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
-# 페이지네이션 해야함
 @pytest.mark.comments
 def test_comment_list_by_post_ok(client: TestClient):
     client.post(
@@ -117,7 +111,6 @@ def test_comment_list_by_post_empty_ok(client: TestClient):
     assert len(response.json()["comments"]) == 0
 
 
-# 다른 유저가 넣은거 처리 해야함
 @pytest.mark.comments
 def test_comment_list_by_user_ok(client: TestClient):
     client.post(
@@ -145,14 +138,6 @@ def test_comment_list_by_user_empty_ok(client: TestClient):
 
     assert response.status_code == 200
     assert len(response.json()["comments"]) == 0
-
-
-# 없는거 로직을 넣어야 하나?
-# def test_comment_list_fail(client: TestClient):
-#     response = client.get(
-#         "/posts"
-#     )
-#     assert response.status_code == 500
 
 
 @pytest.mark.patch
@@ -189,7 +174,6 @@ def test_comment_patch_invalid_author(client: TestClient):
         },
     )
 
-    # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     client.post(
         "/users",
         json={
@@ -206,12 +190,10 @@ def test_comment_patch_invalid_author(client: TestClient):
         },
     )
 
-    # 쿠키에 이미 변경된 아이디가 들어있음. 명시로 다시 넣어주는게 좋은가?
-
     response = client.patch(url="/comments/1", json={"content": "test_content_1_edit"})
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "작성자만 수정할 수 있습니다"
+    assert response.json()["detail"] == "작성자 또는 관리자만 수정할 수 있습니다"
 
 
 @pytest.mark.patch
@@ -276,7 +258,6 @@ def test_comment_delete_invalid_author(client: TestClient):
         },
     )
 
-    # 다른 아이디로 삭제 시도. 세션아이디 변경 됨
     client.post(
         "/users",
         json={
@@ -293,12 +274,10 @@ def test_comment_delete_invalid_author(client: TestClient):
         },
     )
 
-    # 쿠키에 이미 변경된 아이디가 들어있음. 명시로 다시 넣어주는게 좋은가?
-
     response = client.delete(url="/comments/1")
 
     assert response.status_code == 403
-    assert response.json()["detail"] == "작성자만 삭제할 수 있습니다"
+    assert response.json()["detail"] == "작성자 또는 관리자만 삭제할 수 있습니다"
 
 
 @pytest.mark.delete
@@ -310,7 +289,6 @@ def test_comment_delete_admin_role(client: TestClient):
         },
     )
 
-    # 다른 아이디로 삭제 시도. 세션아이디 변경 됨
     client.post(
         "/users",
         json={"nickname": "test_user_2", "password": "Test_password", "role": "admin"},
@@ -323,8 +301,6 @@ def test_comment_delete_admin_role(client: TestClient):
             "password": "Test_password",
         },
     )
-
-    # 쿠키에 이미 변경된 아이디가 들어있음. 명시로 다시 넣어주는게 좋은가?
 
     response = client.delete(url="/comments/1")
 
