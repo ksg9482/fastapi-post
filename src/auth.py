@@ -19,7 +19,7 @@ def insert_session(session_id: str, content: dict, expires_delta: timedelta) -> 
     session_data[session_id] = content
     return session_id
 
-
+# TODO: dict를 넘기지 말고 별도의 스키마(클래스)로 정의하기
 def find_session(session_id: str) -> dict | None:
     return session_data.get(session_id)
 
@@ -42,7 +42,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(secret=plain_password, hash=hashed_password)
 
 
-def get_current_user(session_id: Optional[str] = Cookie(None)) -> dict:
+def get_current_user(session_id: str | None = Cookie(None)) -> dict:
+    # TODO: if not session_id
     if session_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

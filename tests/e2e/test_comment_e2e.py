@@ -84,6 +84,7 @@ def test_create_comment_post_not_exists(client: TestClient):
 
 @pytest.mark.comments
 def test_comment_list_by_post_ok(client: TestClient):
+    # TODO: 이 테스트는 독립적일까?
     client.post(
         "/comments/1",
         json={

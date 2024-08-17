@@ -25,15 +25,19 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 )
 async def create_comment(
     post_id: int,
+    # TODO: post_id가 request body에 들어가야 하지 않을까?
+    # COMMENT: 다른 대안으로 POST /posts/{post_id}/comments 
     request: CreateCommentRequest,
+    # TODO: service -> comment_service
     service: CommentService = Depends(CommentService),
     post_service: PostService = Depends(PostService),
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_current_user),  # TODO: type hint -> mypy 적용해보기 (+ pre-commit-config 추가히기)
 ) -> CreateCommentResponse:
+    # COMMENT: 본인만의 개행 기준이 있는지? 있으면 좋을듯.
     user_id = current_user["id"]
-
+    
     post = await post_service.post_find_one(post_id)
-
+    
     if not post:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
@@ -42,7 +46,7 @@ async def create_comment(
     new_comment = await service.create_comment(
         user_id=user_id, post_id=post_id, content=request.content
     )
-
+    
     return CreateCommentResponse(
         id=new_comment.id,
         author_id=new_comment.author_id,
@@ -53,6 +57,10 @@ async def create_comment(
     )
 
 
+# TODO: GET /comments?user_id={user_id}
+# TODO: GET /comments?post_id={post_id}
+# TODO: GET /comments?user_id={user_id}&post_id={post_id}
+# TODO: 아래 두 엔드포인트 위처럼 합치기 + user_id 여러 개 받기 
 @router.get(
     "/by_post/{post_id}",
     response_model=CommentsResponse,
@@ -122,6 +130,7 @@ async def delete_comment(
     user_id = current_user["id"]
     user_role = current_user["role"]
 
+    # TODO: 예측 가능하고 일관되게 메서드명 지어보기
     comment = await service.comment_one(comment_id)
 
     if not comment:
