@@ -5,6 +5,8 @@ import pytest
 
 from main import app
 
+# TODO: 테스트 코드를 위한 설정 분리 (ex. DB_CONNECTION_STRING)
+# ref: https://mingrammer.com/ways-to-manage-the-configuration-in-python/
 
 @pytest.fixture
 def client():
@@ -33,8 +35,12 @@ def client():
         yield client
 
 
+
+# TODO: given when then이 주석으로 있으면 좋겠다.
 @pytest.mark.create
 def test_create_post_ok(client: TestClient):
+
+    # when
     response = client.post(
         "/posts",
         json={
@@ -42,8 +48,12 @@ def test_create_post_ok(client: TestClient):
             "content": "test_content",
         },
     )
+
+    # then
     assert response.status_code == 201
     assert response.json()["id"]
+
+    # TODO: database에 엔티티 생겼나? 확인
 
 
 @pytest.mark.create
