@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 from sqlmodel import (
     Field,
     SQLModel,
@@ -15,7 +14,7 @@ class Role(Enum):
 
 
 class User(SQLModel, table=True):
-    id: Optional[int] = Field(primary_key=True)
+    id: int | None = Field(primary_key=True)
     nickname: str
     password: str
     role: Role = Field(default=Role.member)
