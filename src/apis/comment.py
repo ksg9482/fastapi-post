@@ -1,7 +1,7 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
+from src.schemas.auth import SessionContent
 from src.schemas.comment import (
     CreateCommentRequest,
     CreateCommentResponse,
@@ -19,34 +19,31 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 # POST /comments?post_id=1 이게 나을듯
 # POST /comments/list?post_id=1
 @router.post(
-    "/{post_id}",
+    "/",
     status_code=status.HTTP_201_CREATED,
     response_model=CreateCommentResponse,
 )
 async def create_comment(
-    post_id: int,
-    # TODO: post_id가 request body에 들어가야 하지 않을까?
-    # COMMENT: 다른 대안으로 POST /posts/{post_id}/comments 
+    # COMMENT: 다른 대안으로 POST /posts/{post_id}/comments
     request: CreateCommentRequest,
-    # TODO: service -> comment_service
-    service: CommentService = Depends(CommentService),
+    comment_service: CommentService = Depends(CommentService),
     post_service: PostService = Depends(PostService),
-    current_user=Depends(get_current_user),  # TODO: type hint -> mypy 적용해보기 (+ pre-commit-config 추가히기)
+    current_user: SessionContent = Depends(
+        get_current_user
+    ),  # TODO: type hint -> mypy 적용해보기 (+ pre-commit-config 추가히기)
 ) -> CreateCommentResponse:
-    # COMMENT: 본인만의 개행 기준이 있는지? 있으면 좋을듯.
-    user_id = current_user["id"]
-    
-    post = await post_service.post_find_one(post_id)
-    
+    user_id = current_user.id
+
+    post = await post_service.get_post(request.post_id)
     if not post:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    new_comment = await service.create_comment(
-        user_id=user_id, post_id=post_id, content=request.content
+    new_comment = await comment_service.create_comment(
+        user_id=user_id, post_id=request.post_id, content=request.content
     )
-    
+
     return CreateCommentResponse(
         id=new_comment.id,
         author_id=new_comment.author_id,
@@ -57,42 +54,28 @@ async def create_comment(
     )
 
 
-# TODO: GET /comments?user_id={user_id}
-# TODO: GET /comments?post_id={post_id}
-# TODO: GET /comments?user_id={user_id}&post_id={post_id}
-# TODO: 아래 두 엔드포인트 위처럼 합치기 + user_id 여러 개 받기 
 @router.get(
-    "/by_post/{post_id}",
+    "/",
     response_model=CommentsResponse,
     status_code=status.HTTP_200_OK,
 )
-async def get_comment_list_by_post(
-    post_id: int,
-    page: Optional[int] = Query(1),
+async def get_comments_by_id(
+    post_id: int | None = None,
+    user_id: int | None = None,
+    page: int | None = Query(1),
     service: CommentService = Depends(CommentService),
 ) -> CommentsResponse:
-    comments = await service.comment_list_by_post(page, post_id)
+    if (not post_id) and (not user_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="포스트 아이디 또는 유저 아이디가 필요합니다",
+        )
 
-    return CommentsResponse(
-        comments=list([comment.model_dump() for comment in comments])
+    comments = await service.get_comments_by_id(
+        post_id=post_id, user_id=user_id, page=page
     )
 
-
-@router.get(
-    "/by_user/{user_id}",
-    response_model=CommentsResponse,
-    status_code=status.HTTP_200_OK,
-)
-async def get_comment_list_by_user(
-    user_id: int,
-    page: Optional[int] = Query(1),
-    service: CommentService = Depends(CommentService),
-) -> CommentsResponse:
-    comments = await service.comment_list_by_user(page, user_id)
-
-    return CommentsResponse(
-        comments=list([comment.model_dump() for comment in comments])
-    )
+    return CommentsResponse(comments=[comment.model_dump() for comment in comments])
 
 
 @router.patch("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -100,12 +83,12 @@ async def edit_comment(
     comment_id: int,
     request: EditComment,
     service: CommentService = Depends(CommentService),
-    current_user=Depends(get_current_user),
+    current_user: SessionContent = Depends(get_current_user),
 ) -> None:
-    user_id = current_user["id"]
-    user_role = current_user["role"]
+    user_id = current_user.id
+    user_role = current_user.role
 
-    comment = await service.comment_one(comment_id)
+    comment = await service.get_comment(comment_id)
 
     if not comment:
         raise HTTPException(
@@ -125,13 +108,12 @@ async def edit_comment(
 async def delete_comment(
     comment_id: int,
     service: CommentService = Depends(CommentService),
-    current_user=Depends(get_current_user),
+    current_user: SessionContent = Depends(get_current_user),
 ) -> None:
-    user_id = current_user["id"]
-    user_role = current_user["role"]
+    user_id = current_user.id
+    user_role = current_user.role
 
-    # TODO: 예측 가능하고 일관되게 메서드명 지어보기
-    comment = await service.comment_one(comment_id)
+    comment = await service.get_comment(comment_id)
 
     if not comment:
         raise HTTPException(

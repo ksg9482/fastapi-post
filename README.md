@@ -19,9 +19,13 @@ poetry shell
 ```
 ## Start
 서버 실행
+* Dev
 ```
-Dev: uvicorn main:app --reload
-Prod: uvicorn main:app
+uvicorn main:app --reload
+```
+* Prod
+```
+uvicorn main:app
 ```
 
 ## API
@@ -75,6 +79,7 @@ erDiagram
 
 ## TEST
 ### E2E Test
+* E2E Test start
 ```
 pytest
 ```
