@@ -1,6 +1,11 @@
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Field
+
+from src.domains.user import Role
 
 
-class SessionData(BaseModel):
+class SessionContent(BaseModel):
     id: int
     nickname: str
+    role: Role
+    expire: datetime | None = Field(default=None)
