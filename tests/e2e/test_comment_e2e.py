@@ -39,8 +39,9 @@ def client():
 @pytest.mark.create
 def test_create_comment_ok(client: TestClient):
     response = client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment",
         },
     )
@@ -51,8 +52,9 @@ def test_create_comment_ok(client: TestClient):
 @pytest.mark.create
 def test_create_comment_invalid_params(client: TestClient):
     response = client.post(
-        url="/comments/1",
+        url="/comments",
         json={
+            "post_id": 1,
             "content": None,
         },
     )
@@ -62,10 +64,8 @@ def test_create_comment_invalid_params(client: TestClient):
 @pytest.mark.create
 def test_create_comment_post_missing_field(client: TestClient):
     response = client.post(
-        url="/comments/1",
-        json={
-            "content": None,
-        },
+        url="/comments",
+        json={"post_id": 1},
     )
     assert response.status_code == 422
 
@@ -73,8 +73,9 @@ def test_create_comment_post_missing_field(client: TestClient):
 @pytest.mark.create
 def test_create_comment_post_not_exists(client: TestClient):
     response = client.post(
-        url="/comments/9999",
+        url="/comments",
         json={
+            "post_id": 9999,
             "content": "test_comment",
         },
     )
@@ -83,59 +84,94 @@ def test_create_comment_post_not_exists(client: TestClient):
 
 
 @pytest.mark.comments
-def test_comment_list_by_post_ok(client: TestClient):
+def test_get_comments_by_post_ok(client: TestClient):
     # TODO: 이 테스트는 독립적일까?
     client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
 
     client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_2",
         },
     )
-    response = client.get("/comments/by_post/1")
+    response = client.get("/comments?post_id=1")
 
     assert response.status_code == 200
     assert len(response.json()["comments"]) == 2
 
 
 @pytest.mark.comments
-def test_comment_list_by_post_empty_ok(client: TestClient):
-    response = client.get("/comments/by_post/1")
+def test_get_comments_by_post_empty_ok(client: TestClient):
+    response = client.get("/comments?post_id=1")
 
     assert response.status_code == 200
     assert len(response.json()["comments"]) == 0
 
 
 @pytest.mark.comments
-def test_comment_list_by_user_ok(client: TestClient):
+def test_get_comments_by_user_ok(client: TestClient):
     client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
 
     client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_2",
         },
     )
-    response = client.get("/comments/by_user/1")
+    response = client.get("/comments?user_id=1")
 
     assert response.status_code == 200
     assert len(response.json()["comments"]) == 2
 
 
 @pytest.mark.comments
-def test_comment_list_by_user_empty_ok(client: TestClient):
-    response = client.get("/comments/by_user/1")
+def test_get_comments_by_user_empty_ok(client: TestClient):
+    response = client.get("/comments?user_id=1")
+
+    assert response.status_code == 200
+    assert len(response.json()["comments"]) == 0
+
+
+@pytest.mark.comments
+def test_get_comments_by_post_and_user_ok(client: TestClient):
+    client.post(
+        "/comments",
+        json={
+            "post_id": 1,
+            "content": "test_comment_1",
+        },
+    )
+
+    client.post(
+        "/comments",
+        json={
+            "post_id": 1,
+            "content": "test_comment_2",
+        },
+    )
+    response = client.get("/comments?post_id=1&user_id=1")
+
+    assert response.status_code == 200
+    assert len(response.json()["comments"]) == 2
+
+
+@pytest.mark.comments
+def test_get_comments_by_post_and_user_empty_ok(client: TestClient):
+    response = client.get("/comments?post_id=1&user_id=1")
 
     assert response.status_code == 200
     assert len(response.json()["comments"]) == 0
@@ -144,8 +180,9 @@ def test_comment_list_by_user_empty_ok(client: TestClient):
 @pytest.mark.patch
 def test_comment_patch_ok(client: TestClient):
     client.post(
-        url="/comments/1",
+        url="/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
@@ -153,7 +190,7 @@ def test_comment_patch_ok(client: TestClient):
     response = client.patch(url="/comments/1", json={"content": "test_comment_1_edit"})
     assert response.status_code == 204
 
-    comment_response = client.get("/comments/by_post/1")
+    comment_response = client.get("/comments?post_id=1")
     assert comment_response.status_code == 200
     assert comment_response.json()["comments"][0]["content"] == "test_comment_1_edit"
 
@@ -169,12 +206,12 @@ def test_comment_patch_not_exists(client: TestClient):
 @pytest.mark.patch
 def test_comment_patch_invalid_author(client: TestClient):
     client.post(
-        url="/comments/1",
+        url="/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
-
     client.post(
         "/users",
         json={
@@ -182,7 +219,6 @@ def test_comment_patch_invalid_author(client: TestClient):
             "password": "Test_password",
         },
     )
-
     client.post(
         "/users/login",
         json={
@@ -200,18 +236,17 @@ def test_comment_patch_invalid_author(client: TestClient):
 @pytest.mark.patch
 def test_comment_patch_admin_role(client: TestClient):
     client.post(
-        url="/comments/1",
+        url="/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
-
     # admin role로 수정 시도. 세션아이디 변경 됨
     client.post(
         "/users",
         json={"nickname": "test_user_2", "password": "Test_password", "role": "admin"},
     )
-
     client.post(
         "/users/login",
         json={
@@ -228,8 +263,9 @@ def test_comment_patch_admin_role(client: TestClient):
 @pytest.mark.delete
 def test_comment_delete_ok(client: TestClient):
     client.post(
-        url="/comments/1",
+        url="/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
@@ -237,7 +273,7 @@ def test_comment_delete_ok(client: TestClient):
     delete_response = client.delete(url="/comments/1")
     assert delete_response.status_code == 204
 
-    comment_response = client.get("/comments/by_post/1")
+    comment_response = client.get("/comments?post_id=1")
     assert comment_response.status_code == 200
     assert comment_response.json()["comments"] == []
 
@@ -253,8 +289,9 @@ def test_comment_delete_not_exists(client: TestClient):
 @pytest.mark.delete
 def test_comment_delete_invalid_author(client: TestClient):
     client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )
@@ -284,8 +321,9 @@ def test_comment_delete_invalid_author(client: TestClient):
 @pytest.mark.delete
 def test_comment_delete_admin_role(client: TestClient):
     client.post(
-        "/comments/1",
+        "/comments",
         json={
+            "post_id": 1,
             "content": "test_comment_1",
         },
     )

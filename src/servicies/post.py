@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import Depends
 
@@ -24,7 +24,7 @@ class PostService:
 
         return new_post
 
-    async def post_list(self, page: int) -> List[Post]:
+    async def get_posts(self, page: int) -> List[Post]:
         offset = (page - 1) * self.items_per_page
         result = await self.session.exec(
             select(Post, User.nickname)
@@ -45,7 +45,7 @@ class PostService:
 
         return author_include_posts
 
-    async def post_find_one(self, post_id: int) -> Post | None:
+    async def get_post(self, post_id: int) -> Post | None:
         result = await self.session.exec(
             select(Post, User).join(User).where(Post.id == post_id)
         )
@@ -59,7 +59,7 @@ class PostService:
         return post
 
     async def edit_post(
-        self, post: Post, title: Optional[str] = None, content: Optional[str] = None
+        self, post: Post, title: str | None = None, content: str | None = None
     ) -> None:
         if title:
             post.title = title
