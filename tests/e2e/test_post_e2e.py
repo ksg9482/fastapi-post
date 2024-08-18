@@ -8,6 +8,7 @@ from main import app
 # TODO: 테스트 코드를 위한 설정 분리 (ex. DB_CONNECTION_STRING)
 # ref: https://mingrammer.com/ways-to-manage-the-configuration-in-python/
 
+
 @pytest.fixture
 def client():
     with TestClient(app) as client:
@@ -33,7 +34,6 @@ def client():
         # }
 
         yield client
-
 
 
 # TODO: given when then이 주석으로 있으면 좋겠다.
@@ -70,7 +70,7 @@ def test_create_post_invalid_params(client: TestClient):
 
 
 @pytest.mark.posts
-def test_post_list_ok(client: TestClient):
+def test_get_posts_ok(client: TestClient):
     client.post(
         "/posts",
         json={
@@ -94,7 +94,7 @@ def test_post_list_ok(client: TestClient):
 
 
 @pytest.mark.posts
-def test_post_list_empty_ok(client: TestClient):
+def test_get_posts_empty_ok(client: TestClient):
     response = client.get("/posts")
 
     assert response.status_code == 200
@@ -102,7 +102,7 @@ def test_post_list_empty_ok(client: TestClient):
 
 
 @pytest.mark.post
-def test_post_find_one_ok(client: TestClient):
+def test_get_post_ok(client: TestClient):
     client.post(
         "/posts",
         json={
@@ -112,7 +112,6 @@ def test_post_find_one_ok(client: TestClient):
     )
 
     response = client.get("/posts/1")
-    print(response.json())
 
     assert response.status_code == 200
     assert response.json()["title"] == "test_title_1"
@@ -120,7 +119,7 @@ def test_post_find_one_ok(client: TestClient):
 
 
 @pytest.mark.post
-def test_post_find_one_not_exists(client: TestClient):
+def test_get_post_not_exists(client: TestClient):
     response = client.get("/posts/1")
     assert response.status_code == 400
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
