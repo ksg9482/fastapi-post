@@ -8,7 +8,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 engine = AsyncEngine(create_engine(url=DATABASE_URL, future=True))
-# engine = AsyncEngine(create_engine(DATABASE_URL, echo=True, future=True))
 
 
 @asynccontextmanager
