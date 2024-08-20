@@ -1,48 +1,82 @@
-from fastapi.testclient import TestClient
-
-from fastapi.testclient import TestClient
+import os
+from dotenv import load_dotenv
+from httpx import ASGITransport, AsyncClient
 import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker
+from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
 
 from main import app
+from src.auth import hash_password
+from src.database import get_session
+from src.domains.post import Post
+from src.domains.user import User
 
 # TODO: 테스트 코드를 위한 설정 분리 (ex. DB_CONNECTION_STRING)
 # ref: https://mingrammer.com/ways-to-manage-the-configuration-in-python/
 
-@pytest.fixture
-def client():
-    with TestClient(app) as client:
-        client.post(
-            "/users",
-            json={
-                "nickname": "test_user",
-                "password": "Test_password",
-            },
-        )
-
-        response = client.post(
-            "/users/login",
-            json={
-                "nickname": "test_user",
-                "password": "Test_password",
-            },
-        )
-
-        # 명시해야 하나??
-        # client.cookies = {
-        #     "session_id": response.json()['session_id']
-        # }
-
-        yield client
+load_dotenv()
+TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 
+@pytest_asyncio.fixture(scope="function")
+async def test_db_init():
+    test_engine = create_async_engine(url=TEST_DATABASE_URL, future=True)
+    async with test_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
+        await conn.run_sync(SQLModel.metadata.create_all)
 
-# TODO: given when then이 주석으로 있으면 좋겠다.
+    yield test_engine
+
+    await test_engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def test_session(test_db_init: AsyncEngine) -> AsyncSession:
+    AsyncSessionLocal = async_sessionmaker(
+        autocommit=False,
+        autoflush=False,
+        bind=test_db_init,
+        class_=AsyncSession,
+    )
+    async with AsyncSessionLocal() as session:
+        yield session
+
+
+@pytest_asyncio.fixture
+async def test_client(test_session: AsyncSession):
+    async def override_get_session():
+        yield test_session
+
+    app.dependency_overrides[get_session] = override_get_session
+    client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test/users")
+
+    hashed_password = hash_password(plain_password="Test_password")
+    new_user = User(nickname="test_user", password=hashed_password)
+    test_session.add(new_user)
+    await test_session.commit()
+
+    await client.post(
+        "/login",
+        json={
+            "nickname": "test_user",
+            "password": "Test_password",
+        },
+    )
+
+    client.base_url = "http://test/posts"
+    yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
 @pytest.mark.create
-def test_create_post_ok(client: TestClient):
-
+async def test_create_post_ok(test_client: AsyncClient, test_session: AsyncSession):
     # when
-    response = client.post(
-        "/posts",
+    response = await test_client.post(
+        "/",
         json={
             "title": "test_title",
             "content": "test_content",
@@ -53,268 +87,349 @@ def test_create_post_ok(client: TestClient):
     assert response.status_code == 201
     assert response.json()["id"]
 
-    # TODO: database에 엔티티 생겼나? 확인
+    result = await test_session.exec(select(Post).where(Post.title == "test_title"))
+    post = result.first()
+    assert post.title == "test_title"
 
 
+@pytest.mark.asyncio
 @pytest.mark.create
-def test_create_post_invalid_params(client: TestClient):
-
-    response = client.post(
-        "/posts",
+async def test_create_post_invalid_params(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # when
+    response = await test_client.post(
+        "/",
         json={
             "title": None,
             "content": None,
         },
     )
+
+    # then
     assert response.status_code == 422
 
+    result = await test_session.exec(select(Post))
+    posts = result.all()
+    assert len(posts) == 0
 
+
+@pytest.mark.asyncio
 @pytest.mark.posts
-def test_post_list_ok(client: TestClient):
-    client.post(
-        "/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_get_posts_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
     )
-
-    client.post(
-        "/posts",
-        json={
-            "title": "test_title_2",
-            "content": "test_content_2",
-        },
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
     )
+    test_session.add(
+        Post(author_id=user.id, title="test_title_2", content="test_content_2")
+    )
+    await test_session.commit()
 
-    response = client.get("/posts")
+    # when
+    response = await test_client.get("/")
 
+    # then
     assert response.status_code == 200
     assert len(response.json()["posts"]) == 2
 
 
+@pytest.mark.asyncio
 @pytest.mark.posts
-def test_post_list_empty_ok(client: TestClient):
-    response = client.get("/posts")
+async def test_get_posts_empty_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # when
+    response = await test_client.get("/")
 
+    # then
     assert response.status_code == 200
     assert len(response.json()["posts"]) == 0
 
+    result = await test_session.exec(select(Post))
+    posts = result.all()
+    assert len(posts) == 0
 
+
+@pytest.mark.asyncio
 @pytest.mark.post
-def test_post_find_one_ok(client: TestClient):
-    client.post(
-        "/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_get_post_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
     )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
+    )
+    await test_session.commit()
 
-    response = client.get("/posts/1")
-    print(response.json())
+    # when
+    response = await test_client.get("/1")
 
+    # then
     assert response.status_code == 200
     assert response.json()["title"] == "test_title_1"
     assert response.json()["content"] == "test_content_1"
 
 
+# 여기부터
+@pytest.mark.asyncio
 @pytest.mark.post
-def test_post_find_one_not_exists(client: TestClient):
-    response = client.get("/posts/1")
+async def test_get_post_not_exists(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # when
+    response = await test_client.get("/1")
+
+    # then
     assert response.status_code == 400
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
+@pytest.mark.asyncio
 @pytest.mark.patch
-def test_post_patch_ok(client: TestClient):
-    client.post(
-        url="/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_patch_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
+    )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
+    )
+    await test_session.commit()
+
+    # when
+    response = await test_client.patch(
+        url="/1", json={"content": "test_content_1_edit"}
     )
 
-    client.patch(url="/posts/1", json={"content": "test_content_1_edit"})
+    # then
+    assert response.status_code == 204
 
-    response = client.get("/posts/1")
-    assert response.status_code == 200
-    assert response.json()["content"] == "test_content_1_edit"
+    result = await test_session.exec(select(Post).where(Post.id == 1))
+    post = result.first()
+    assert post.content == "test_content_1_edit"
 
 
+@pytest.mark.asyncio
 @pytest.mark.patch
-def test_post_patch_not_exists(client: TestClient):
-    client.patch(url="/posts/1", json={"content": "test_content_1_edit"})
+async def test_post_patch_not_exists(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # when
+    response = await test_client.patch(
+        url="/1", json={"content": "test_content_1_edit"}
+    )
 
-    response = client.get("/posts/1")
+    # then
     assert response.status_code == 400
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
+@pytest.mark.asyncio
 @pytest.mark.patch
-def test_post_patch_invalid_author(client: TestClient):
-    client.post(
-        "/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_patch_invalid_author(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
+    )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
     )
 
+    hashed_password = hash_password(plain_password="Test_password")
+    new_user = User(nickname="test_user_2", password=hashed_password)
+    test_session.add(new_user)
+    await test_session.commit()
+
+    # when
     # 다른 아이디로 수정 시도. 세션아이디 변경 됨
-    client.post(
-        "/users",
+    test_client.base_url = "http://test/users"
+    await test_client.post(
+        "/login",
         json={
             "nickname": "test_user_2",
             "password": "Test_password",
         },
     )
+    test_client.base_url = "http://test/posts"
 
-    client.post(
-        "/users/login",
-        json={
-            "nickname": "test_user_2",
-            "password": "Test_password",
-        },
+    response = await test_client.patch(
+        url="/1", json={"content": "test_content_1_edit"}
     )
 
-    # 쿠키에 이미 변경된 아이디가 들어있음. 명시로 다시 넣어주는게 좋은가?
-
-    response = client.patch(url="/posts/1", json={"content": "test_content_1_edit"})
-
+    # then
     assert response.status_code == 403
     assert response.json()["detail"] == "작성자 또는 관리자만 수정할 수 있습니다"
 
 
+@pytest.mark.asyncio
 @pytest.mark.put
-def test_post_put_ok(client: TestClient):
-    client.post(
-        url="/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_put_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
     )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
+    )
+    await test_session.commit()
 
-    client.put(
-        url="/posts/1",
+    response = await test_client.put(
+        url="/1",
         json={"title": "test_title_1_edit", "content": "test_content_1_edit"},
     )
 
-    response = client.get("/posts/1")
-    assert response.status_code == 200
-    assert response.json()["title"] == "test_title_1_edit"
-    assert response.json()["content"] == "test_content_1_edit"
+    # then
+    assert response.status_code == 204
+
+    result = await test_session.exec(select(Post).where(Post.id == 1))
+    post = result.first()
+    assert post.title == "test_title_1_edit"
+    assert post.content == "test_content_1_edit"
 
 
+@pytest.mark.asyncio
 @pytest.mark.put
-def test_post_put_not_exists(client: TestClient):
-    response = client.put(
-        url="/posts/1",
+async def test_post_put_not_exists(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # when
+    response = await test_client.put(
+        url="/1",
         json={"title": "test_title_1_edit", "content": "test_content_1_edit"},
     )
 
+    # then
     assert response.status_code == 400
     assert response.json()["detail"] == "존재하지 않는 포스트입니다"
 
 
+@pytest.mark.asyncio
 @pytest.mark.put
-def test_post_put_invalid_author(client: TestClient):
-    client.post(
-        "/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_put_invalid_author(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
+    )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
     )
 
-    client.post(
-        "/users",
+    hashed_password = hash_password(plain_password="Test_password")
+    new_user = User(nickname="test_user_2", password=hashed_password)
+    test_session.add(new_user)
+    await test_session.commit()
+
+    # when
+    # 다른 아이디로 수정 시도. 세션아이디 변경 됨
+    test_client.base_url = "http://test/users"
+    await test_client.post(
+        "/login",
         json={
             "nickname": "test_user_2",
             "password": "Test_password",
         },
     )
+    test_client.base_url = "http://test/posts"
 
-    client.post(
-        "/users/login",
-        json={
-            "nickname": "test_user_2",
-            "password": "Test_password",
-        },
-    )
-
-    response = client.put(
-        url="/posts/1",
+    response = await test_client.put(
+        url="/1",
         json={"title": "test_title_1_edit", "content": "test_content_1_edit"},
     )
 
+    # then
     assert response.status_code == 403
     assert response.json()["detail"] == "작성자 또는 관리자만 수정할 수 있습니다"
 
 
+@pytest.mark.asyncio
 @pytest.mark.put
-def test_post_put_missing_field(client: TestClient):
-    client.post(
-        url="/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_put_missing_field(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
     )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
+    )
+    await test_session.commit()
 
-    response = client.put(url="/posts/1", json={"content": "test_content_1_edit"})
+    # when
+    response = await test_client.put(url=f"/1", json={"content": "test_content_1_edit"})
 
+    # then
     assert response.status_code == 422
 
 
+@pytest.mark.asyncio
 @pytest.mark.delete
-def test_post_delete_ok(client: TestClient):
-    client.post(
-        url="/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_delete_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
     )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
+    )
+    await test_session.commit()
 
-    delete_response = client.delete(url="/posts/1")
+    # when
+    delete_response = await test_client.delete(url="/1")
     assert delete_response.status_code == 204
 
-    # 삭제 포스트 검증
-    post_response = client.get("/posts/1")
-    assert post_response.status_code == 400
-    assert post_response.json()["detail"] == "존재하지 않는 포스트입니다"
+    # then
+    result = await test_session.exec(select(Post).where(Post.id == 1))
+    post = result.first()
+    assert post == None
 
 
+@pytest.mark.asyncio
 @pytest.mark.delete
-def test_post_delete_invalid_author(client: TestClient):
-    client.post(
-        "/posts",
-        json={
-            "title": "test_title_1",
-            "content": "test_content_1",
-        },
+async def test_post_delete_invalid_author(
+    test_client: AsyncClient, test_session: AsyncSession
+):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
+    )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
     )
 
-    client.post(
-        "/users",
+    hashed_password = hash_password(plain_password="Test_password")
+    new_user = User(nickname="test_user_2", password=hashed_password)
+    test_session.add(new_user)
+    await test_session.commit()
+
+    # 다른 아이디로 수정 시도. 세션아이디 변경 됨
+    test_client.base_url = "http://test/users"
+    await test_client.post(
+        "/login",
         json={
             "nickname": "test_user_2",
             "password": "Test_password",
         },
     )
+    test_client.base_url = "http://test/posts"
 
-    client.post(
-        "/users/login",
-        json={
-            "nickname": "test_user_2",
-            "password": "Test_password",
-        },
-    )
-
-    response = client.delete(url="/posts/1")
+    response = await test_client.delete(url="/1")
 
     assert response.status_code == 403
     assert response.json()["detail"] == "작성자 또는 관리자만 삭제할 수 있습니다"

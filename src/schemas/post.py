@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel
 
@@ -17,7 +17,7 @@ class PostOneResponse(BaseModel):
     id: int
     author: str
     title: str
-    content: Optional[str] = None
+    content: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -27,8 +27,8 @@ class PostsResponse(BaseModel):
 
 
 class EditPostRequest(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: str | None = None
+    content: str | None = None
 
 
 class EditPostWholeRequest(BaseModel):
