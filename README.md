@@ -17,6 +17,20 @@ poetry install
 ```
 poetry shell
 ```
+
+## Docker
+* 앱 이미지 생성
+```
+docker build --tag fastapi-post:1.0 .
+```
+* docker-compose 실행
+```
+docker-compose up
+```
+* docker-compose 종료
+```
+docker-compose down
+```
 ## Start
 서버 실행
 * Dev
@@ -30,15 +44,28 @@ uvicorn main:app
 
 ## API
 API 예시
+* 포스트 생성
 ```
-POST /posts - 포스트 생성
-GET /posts?page=1 - 전체 포스트 리스트
-GET /posts/{post_id} - post_id 포스트
-
-POST /users/login - 로그인
+curl -X POST http://localhost:8000/posts \
+     -H "Content-Type: application/json" \
+     -d '{"title": "제목", "content": "내용"}'
+```
+* 전체 포스트 리스트
+```
+curl -X GET "http://localhost:8000/posts?page=1"
+```
+* post_id 포스트
+```
+curl -X GET http://localhost:8000/posts/1
+```
+* 로그인
+```
+curl -X POST http://localhost:8000/users/login \
+     -H "Content-Type: application/json" \
+     -d '{"username": "사용자이름", "password": "비밀번호"}'
 ```
 
-API 상세
+* API 상세
 ```
 http://localhost:8000/docs
 ```
