@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from fastapi import Depends
 
@@ -16,25 +16,32 @@ class CommentService:
 
     async def create_comment(self, user_id: int, post_id: int, content: str) -> Comment:
         new_comment = Comment(author_id=user_id, post_id=post_id, content=content)
+
         self.session.add(new_comment)
         await self.session.commit()
         await self.session.refresh(new_comment)
+
         return new_comment
 
-    async def comment_list_by_post(self, post_id: int, page: int) -> List[Comment]:
+    async def get_comments_by_id(
+        self, page: int, post_id: int | None = None, user_id: int | None = None
+    ) -> List[Comment]:
         offset = (page - 1) * self.items_per_page
-        result = await self.session.exec(
-            select(Comment)
-            .where(Comment.post_id == post_id)
-            .offset(offset)
-            .limit(self.items_per_page)
-        )
+        orm_query = select(Comment)
+        if post_id:
+            orm_query.where(Comment.post_id == post_id)
+        if user_id:
+            orm_query.where(Comment.author_id == user_id)
+        orm_query.offset(offset).limit(self.items_per_page)
+
+        result = await self.session.exec(orm_query)
         comments = result.all()
 
         return list(comments)
 
-    async def comment_list_by_user(self, user_id: int, page: int) -> List[Comment]:
+    async def get_comments_by_user(self, user_id: int, page: int) -> List[Comment]:
         offset = (page - 1) * self.items_per_page
+
         result = await self.session.exec(
             select(Comment)
             .where(Comment.author_id == user_id)
@@ -42,18 +49,18 @@ class CommentService:
             .limit(self.items_per_page)
         )
         comments = result.all()
+
         return list(comments)
 
-    async def comment_one(self, comment_id: int) -> Comment | None:
+    async def get_comment(self, comment_id: int) -> Comment | None:
         result = await self.session.exec(
             select(Comment).where(Comment.id == comment_id)
         )
         comment = result.first()
+
         return comment
 
-    async def edit_comment(
-        self, comment: Comment, content: Optional[str] = None
-    ) -> None:
+    async def edit_comment(self, comment: Comment, content: str | None = None) -> None:
         if content:
             comment.content = content
 

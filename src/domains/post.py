@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 from sqlmodel import (
     Field,
     SQLModel,
@@ -10,7 +9,7 @@ from src.domains.user import User
 
 
 class Post(SQLModel, table=True):
-    id: Optional[int] = Field(primary_key=True)
+    id: int | None = Field(primary_key=True)
     title: str
     content: str
     # default: 정의한 값으로 정적 채우기

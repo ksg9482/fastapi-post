@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel
 
 
 class CreateCommentRequest(BaseModel):
+    post_id: int
     content: str
 
 
@@ -31,4 +32,4 @@ class CommentsResponse(BaseModel):
 
 
 class EditComment(BaseModel):
-    content: Optional[str] = None
+    content: str | None = None

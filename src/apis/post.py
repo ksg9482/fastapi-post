@@ -1,7 +1,7 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
+from src.schemas.auth import SessionContent
 from src.schemas.post import (
     EditPostRequest,
     CreatePostRequest,
@@ -22,9 +22,9 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 async def create_post(
     request: CreatePostRequest,
     service: PostService = Depends(PostService),
-    current_user=Depends(get_current_user),
+    current_user: SessionContent = Depends(get_current_user),
 ) -> CreatePostResponse:
-    user_id = current_user["id"]
+    user_id = current_user.id
 
     new_post = await service.create_post(
         user_id=user_id, title=request.title, content=request.content
@@ -34,12 +34,11 @@ async def create_post(
 
 
 @router.get("/", response_model=PostsResponse, status_code=status.HTTP_200_OK)
-async def get_post_list(
-    page: Optional[int] = Query(1), service: PostService = Depends(PostService)
+async def get_get_posts(
+    page: int | None = Query(1), service: PostService = Depends(PostService)
 ) -> PostsResponse:
-    posts = await service.post_list(page)
+    posts = await service.get_posts(page)
 
-    print([post.model_dump() for post in posts])
     return PostsResponse(posts=[post.model_dump() for post in posts])
 
 
@@ -49,7 +48,7 @@ async def get_post_list(
 async def get_post(
     post_id: int, service: PostService = Depends(PostService)
 ) -> PostOneResponse:
-    post = await service.post_find_one(post_id)
+    post = await service.get_post(post_id)
     if not post:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
@@ -70,12 +69,12 @@ async def edit_post(
     post_id: int,
     request: EditPostRequest,
     service: PostService = Depends(PostService),
-    current_user=Depends(get_current_user),
+    current_user: SessionContent = Depends(get_current_user),
 ) -> None:
-    user_id = current_user["id"]
-    user_role = current_user["role"]
+    user_id = current_user.id
+    user_role = current_user.role
 
-    post = await service.post_find_one(post_id)
+    post = await service.get_post(post_id)
 
     if not post:
         raise HTTPException(
@@ -96,12 +95,12 @@ async def edit_post_whole(
     post_id: int,
     request: EditPostWholeRequest,
     service: PostService = Depends(PostService),
-    current_user=Depends(get_current_user),
+    current_user: SessionContent = Depends(get_current_user),
 ) -> None:
-    user_id = current_user["id"]
-    user_role = current_user["role"]
+    user_id = current_user.id
+    user_role = current_user.role
 
-    post = await service.post_find_one(post_id)
+    post = await service.get_post(post_id)
 
     if not post:
         raise HTTPException(
@@ -121,12 +120,12 @@ async def edit_post_whole(
 async def delete_post(
     post_id: int,
     service: PostService = Depends(PostService),
-    current_user=Depends(get_current_user),
+    current_user: SessionContent = Depends(get_current_user),
 ) -> None:
-    user_id = current_user["id"]
-    user_role = current_user["role"]
+    user_id = current_user.id
+    user_role = current_user.role
 
-    post = await service.post_find_one(post_id)
+    post = await service.get_post(post_id)
 
     if not post:
         raise HTTPException(

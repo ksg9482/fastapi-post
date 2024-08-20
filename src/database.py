@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
@@ -6,9 +8,11 @@ from sqlmodel import create_engine, SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+load_dotenv()
+
+
+DATABASE_URL = os.environ["DATABASE_URL"]
 engine = AsyncEngine(create_engine(url=DATABASE_URL, future=True))
-# engine = AsyncEngine(create_engine(DATABASE_URL, echo=True, future=True))
 
 
 @asynccontextmanager

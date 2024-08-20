@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Optional
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 
 from src.auth import (
@@ -9,6 +8,7 @@ from src.auth import (
     insert_session,
     verify_password,
 )
+from src.schemas.auth import SessionContent
 from src.schemas.user import LoginRequest, LoginResponse, SignUpRequest, SignUpResponse
 from src.servicies.user import UserService
 
@@ -21,7 +21,7 @@ async def signup(
     request: SignUpRequest,
     service: UserService = Depends(UserService),
 ) -> SignUpResponse:
-    user = await service.find_user_by_name(request.nickname)
+    user = await service.get_user_by_nickname(request.nickname)
 
     if user:
         raise HTTPException(
@@ -40,9 +40,9 @@ async def login(
     response: Response,
     request: LoginRequest,
     service: UserService = Depends(UserService),
-    session_id: Optional[str] = Cookie(None),
+    session_id: str | None = Cookie(None),
 ) -> LoginResponse:
-    user = await service.find_user_by_name(request.nickname)
+    user = await service.get_user_by_nickname(request.nickname)
 
     if not user:
         raise HTTPException(
@@ -56,21 +56,19 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="잘못된 비밀번호입니다"
         )
 
-    session_value = {"id": user.id, "nickname": user.nickname, "role": user.role}
+    session_value = SessionContent(id=user.id, nickname=user.nickname, role=user.role)
     session = find_session(session_id)
     new_session_id = session_id if session else generate_session_id()
-
     insert_session(
         session_id=new_session_id,
         content=session_value,
         expires_delta=timedelta(days=1),
     )
-
     response.set_cookie(key="session_id", value=new_session_id, httponly=True)
 
     return LoginResponse(session_id=new_session_id)
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(session_id: Optional[str] = Cookie(None)) -> None:
+async def logout(session_id: str | None = Cookie(None)) -> None:
     delete_session(session_id)
