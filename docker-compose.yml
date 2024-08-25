@@ -6,13 +6,14 @@ services:
       dockerfile: dockerfile
     image: fastapi-post:0.1
     ports:
-      - "8000:8000" 
+      - "80:8000" 
     depends_on:
       - db
     networks:
       - app-network
     environment:
-      - DATABASE_URL=mysql://user:password@db:3306/exampledb 
+      - DATABASE_URL=mysql+aiomysql://user:password@db:3306/exampledb
+      - TEST_DATABASE_URL=mysql+aiomysql://user:password@127.0.0.1:3306/testexampledb
 
   db:
     image: mysql:lts 
