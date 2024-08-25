@@ -1,15 +1,12 @@
 from datetime import timedelta
+
+from uuid import uuid4
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 
-from src.auth import (
-    delete_session,
-    find_session,
-    generate_session_id,
-    insert_session,
-    verify_password,
-)
+from src.auth import verify_password
 from src.schemas.auth import SessionContent
 from src.schemas.user import LoginRequest, LoginResponse, SignUpRequest, SignUpResponse
+from src.servicies.auth import AuthService
 from src.servicies.user import UserService
 
 
@@ -39,16 +36,16 @@ async def signup(
 async def login(
     response: Response,
     request: LoginRequest,
-    service: UserService = Depends(UserService),
+    user_service: UserService = Depends(UserService),
+    auth_service: AuthService = Depends(AuthService),
     session_id: str | None = Cookie(None),
 ) -> LoginResponse:
-    user = await service.get_user_by_nickname(request.nickname)
+    user = await user_service.get_user_by_nickname(request.nickname)
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="존재하지 않는 유저입니다"
         )
-
     if not verify_password(
         plain_password=request.password, hashed_password=user.password
     ):
@@ -56,10 +53,10 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="잘못된 비밀번호입니다"
         )
 
+    session = await auth_service.find_session(session_id)
+    new_session_id = session_id if session else str(uuid4())  # uuld로
     session_value = SessionContent(id=user.id, nickname=user.nickname, role=user.role)
-    session = find_session(session_id)
-    new_session_id = session_id if session else generate_session_id()
-    insert_session(
+    await auth_service.insert_session(
         session_id=new_session_id,
         content=session_value,
         expires_delta=timedelta(days=1),
@@ -70,5 +67,14 @@ async def login(
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
-async def logout(session_id: str | None = Cookie(None)) -> None:
-    delete_session(session_id)
+async def logout(
+    session_id: str | None = Cookie(None),
+    auth_service: AuthService = Depends(AuthService),
+) -> None:
+    session = await auth_service.find_session(session_id)
+    if session:
+        auth_service.delete_session(session)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 세션입니다"
+        )

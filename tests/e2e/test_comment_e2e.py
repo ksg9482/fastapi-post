@@ -5,9 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessi
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
-import os
-from dotenv import load_dotenv
 
+from config import Config
 from main import app
 from src.auth import hash_password
 from src.database import get_session
@@ -15,8 +14,8 @@ from src.domains.post import Post
 from src.domains.user import User
 from src.domains.comment import Comment
 
-load_dotenv()
-TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+
+TEST_DATABASE_URL = Config().TEST_DATABASE_URL
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -330,6 +329,29 @@ async def test_get_comments_by_post_and_user_empty_ok(
 
 
 @pytest.mark.asyncio
+@pytest.mark.comments
+async def test_get_comments_ok(test_client: AsyncClient, test_session: AsyncSession):
+    # given
+    user_result = await test_session.exec(
+        select(User).where(User.nickname == "test_user")
+    )
+    user = user_result.first()
+    test_session.add(
+        Post(author_id=user.id, title="test_title_1", content="test_content_1")
+    )
+    test_session.add(Comment(author_id=user.id, post_id=1, content="test_comment_1"))
+    test_session.add(Comment(author_id=user.id, post_id=1, content="test_comment_2"))
+    await test_session.commit()
+
+    # when
+    response = await test_client.get("")
+
+    # then
+    assert response.status_code == 200
+    assert len(response.json()["comments"]) == 2
+
+
+@pytest.mark.asyncio
 @pytest.mark.patch
 async def test_comment_patch_ok(test_client: AsyncClient, test_session: AsyncSession):
     # given
@@ -405,6 +427,7 @@ async def test_comment_patch_invalid_author(
     # when
     # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={
@@ -445,6 +468,7 @@ async def test_comment_patch_admin_role(
     # when
     # admin role로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={
@@ -540,6 +564,7 @@ async def test_comment_delete_invalid_author(
     # when
     # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={
@@ -578,6 +603,7 @@ async def test_comment_delete_admin_role(
     # when
     # admin role로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={

@@ -1,5 +1,3 @@
-import os
-from dotenv import load_dotenv
 from httpx import ASGITransport, AsyncClient
 import pytest
 import pytest_asyncio
@@ -8,14 +6,14 @@ from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 
+from config import Config
 from main import app
 from src.auth import hash_password
 from src.database import get_session
 from src.domains.user import User
 
 
-load_dotenv()
-TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+TEST_DATABASE_URL = Config().TEST_DATABASE_URL
 
 
 @pytest_asyncio.fixture(scope="function")
