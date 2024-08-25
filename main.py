@@ -5,6 +5,7 @@ from src.database import db_init
 from src.apis.post import router as post_router
 from src.apis.user import router as user_router
 from src.apis.comment import router as comment_router
+from src.apis.common import router as common_router
 
 
 app = FastAPI(lifespan=db_init)
@@ -12,6 +13,7 @@ app = FastAPI(lifespan=db_init)
 app.include_router(router=post_router)
 app.include_router(router=user_router)
 app.include_router(router=comment_router)
+app.include_router(router=common_router)
 
 
 if __name__ == "__main__":

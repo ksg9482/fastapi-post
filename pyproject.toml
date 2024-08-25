@@ -24,7 +24,8 @@ pytest-cov = "^5.0.0"
 pytest-asyncio = "^0.23.8"
 aiomysql = "^0.2.0"
 cryptography = "^43.0.0"
-python-dotenv = "^1.0.1"
+pydantic-settings = "^2.4.0"
+locust = "^2.31.3"
 
 
 [build-system]
