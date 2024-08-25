@@ -23,11 +23,12 @@ class CommentService:
 
         return new_comment
 
-    async def get_comments_by_id(
+    async def get_comments(
         self, page: int, post_id: int | None = None, user_id: int | None = None
     ) -> List[Comment]:
         offset = (page - 1) * self.items_per_page
         orm_query = select(Comment)
+
         if post_id:
             orm_query.where(Comment.post_id == post_id)
         if user_id:
