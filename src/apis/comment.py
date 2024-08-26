@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
+from src.domains.user import Role
 from src.schemas.auth import SessionContent
 from src.schemas.comment import (
+    CommentsResponse,
     CreateCommentRequest,
     CreateCommentResponse,
-    CommentsResponse,
     EditComment,
 )
 from src.servicies.comment import CommentService
 from src.servicies.post import PostService
-from src.domains.user import Role
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 

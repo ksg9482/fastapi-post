@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends
@@ -15,7 +14,7 @@ class AuthService:
         self.session = session
 
     # db에서 가져오는 걸로 바꿔야 함 -> 서비스로 옮긴다
-    async def find_session(self, session_id: str) -> SessionContent | None:
+    async def find_session(self, session_id: str) -> LoginSession | None:
         result = await self.session.exec(
             select(LoginSession).where(LoginSession.id == session_id)
         )
@@ -24,13 +23,7 @@ class AuthService:
         if not result_data:
             return None
 
-        session_content_json = json.loads(result_data.session_data)
-        return SessionContent(
-            id=session_content_json["id"],
-            nickname=session_content_json["nickname"],
-            role=session_content_json["role"],
-            expire=session_content_json["expire"],
-        )
+        return result_data
 
     async def insert_session(
         self, session_id: str, content: SessionContent, expires_delta: timedelta

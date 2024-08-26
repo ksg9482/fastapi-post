@@ -26,6 +26,8 @@ aiomysql = "^0.2.0"
 cryptography = "^43.0.0"
 pydantic-settings = "^2.4.0"
 locust = "^2.31.3"
+pytest-env = "^1.1.3"
+python-ulid = "^2.7.0"
 
 
 [build-system]
@@ -60,3 +62,23 @@ line_length = 88
 
 [tool.pycln]
 all = true
+
+[tool.pytest.ini_options]
+env = [
+  "DATABASE_URL=mysql+aiomysql://user:password@127.0.0.1:3306/testexampledb"
+]
+testpaths = [
+  "tests"
+]
+markers = [
+  "create",
+  "patch",
+  "put",
+  "delete",
+  "posts",
+  "post",
+  "comments",
+  "comment",
+  "login",
+  "logout",
+]
