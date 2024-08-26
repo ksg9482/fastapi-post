@@ -1,7 +1,9 @@
 from datetime import datetime
-from sqlmodel import Field, SQLModel, Relationship, func
-from src.domains.user import User
+
+from sqlmodel import Field, Relationship, SQLModel, func
+
 from src.domains.post import Post
+from src.domains.user import User
 
 
 class Comment(SQLModel, table=True):

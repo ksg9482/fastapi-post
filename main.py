@@ -1,12 +1,11 @@
 import uvicorn
 from fastapi import FastAPI
 
-from src.database import db_init
-from src.apis.post import router as post_router
-from src.apis.user import router as user_router
 from src.apis.comment import router as comment_router
 from src.apis.common import router as common_router
-
+from src.apis.post import router as post_router
+from src.apis.user import router as user_router
+from src.database import db_init
 
 app = FastAPI(lifespan=db_init)
 
