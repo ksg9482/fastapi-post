@@ -6,7 +6,6 @@ from passlib.context import CryptContext
 from src.schemas.auth import SessionContent
 from src.servicies.auth import AuthService
 
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 

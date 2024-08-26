@@ -1,9 +1,6 @@
 from datetime import datetime
-from sqlmodel import (
-    Field,
-    SQLModel,
-    func,
-)
+
+from sqlmodel import Field, SQLModel, func
 
 
 class LoginSession(SQLModel, table=True):
