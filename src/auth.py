@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 from fastapi import Cookie, Depends, HTTPException, status
@@ -26,13 +27,21 @@ async def get_current_user(
             detail="세션 아이디가 입력되지 않았습니다. 다시 로그인 해 주세요",
         )
 
-    session_content = await service.find_session(session_id)
+    session_result = await service.find_session(session_id)
 
-    if not session_content:
+    if not session_result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="존재하지 않는 세션입니다. 다시 로그인 해 주세요",
         )
+
+    session_content_json = json.loads(session_result.session_data)
+    session_content = SessionContent(
+        id=session_content_json["id"],
+        nickname=session_content_json["nickname"],
+        role=session_content_json["role"],
+        expire=session_content_json["expire"],
+    )
 
     is_expired = datetime.now(tz=timezone.utc) >= session_content.expire
     if is_expired:

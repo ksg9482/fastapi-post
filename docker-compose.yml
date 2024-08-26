@@ -13,7 +13,6 @@ services:
       - app-network
     environment:
       - DATABASE_URL=mysql+aiomysql://user:password@db:3306/exampledb
-      - TEST_DATABASE_URL=mysql+aiomysql://user:password@127.0.0.1:3306/testexampledb
 
   db:
     image: mysql:lts 
