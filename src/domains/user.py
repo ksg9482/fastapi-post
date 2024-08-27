@@ -1,11 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from sqlmodel import (
-    Field,
-    SQLModel,
-    Relationship,
-    func,
-)
+
+from sqlmodel import Field, Relationship, SQLModel, func
 
 
 class Role(Enum):

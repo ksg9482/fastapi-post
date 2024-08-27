@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_current_user
+from src.domains.user import Role
 from src.schemas.auth import SessionContent
 from src.schemas.comment import (
+    CommentsResponse,
     CreateCommentRequest,
     CreateCommentResponse,
-    CommentsResponse,
     EditComment,
 )
 from src.servicies.comment import CommentService
 from src.servicies.post import PostService
-from src.domains.user import Role
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
@@ -24,7 +24,6 @@ router = APIRouter(prefix="/comments", tags=["comments"])
     response_model=CreateCommentResponse,
 )
 async def create_comment(
-    # COMMENT: 다른 대안으로 POST /posts/{post_id}/comments
     request: CreateCommentRequest,
     comment_service: CommentService = Depends(CommentService),
     post_service: PostService = Depends(PostService),
@@ -59,21 +58,13 @@ async def create_comment(
     response_model=CommentsResponse,
     status_code=status.HTTP_200_OK,
 )
-async def get_comments_by_id(
+async def get_comments(
     post_id: int | None = None,
     user_id: int | None = None,
     page: int | None = Query(1),
     service: CommentService = Depends(CommentService),
 ) -> CommentsResponse:
-    if (not post_id) and (not user_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="포스트 아이디 또는 유저 아이디가 필요합니다",
-        )
-
-    comments = await service.get_comments_by_id(
-        post_id=post_id, user_id=user_id, page=page
-    )
+    comments = await service.get_comments(post_id=post_id, user_id=user_id, page=page)
 
     return CommentsResponse(comments=[comment.model_dump() for comment in comments])
 
