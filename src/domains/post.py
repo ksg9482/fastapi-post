@@ -1,10 +1,7 @@
 from datetime import datetime
-from sqlmodel import (
-    Field,
-    SQLModel,
-    Relationship,
-    func,
-)
+
+from sqlmodel import Field, Relationship, SQLModel, func
+
 from src.domains.user import User
 
 

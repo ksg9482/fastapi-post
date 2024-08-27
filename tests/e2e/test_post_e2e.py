@@ -1,29 +1,23 @@
-import os
-from dotenv import load_dotenv
-from httpx import ASGITransport, AsyncClient
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker
-from sqlmodel import SQLModel
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select
 
+from config import config
 from main import app
 from src.auth import hash_password
 from src.database import get_session
 from src.domains.post import Post
 from src.domains.user import User
 
-# TODO: 테스트 코드를 위한 설정 분리 (ex. DB_CONNECTION_STRING)
-# ref: https://mingrammer.com/ways-to-manage-the-configuration-in-python/
-
-load_dotenv()
-TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = config.DATABASE_URL
 
 
 @pytest_asyncio.fixture(scope="function")
 async def test_db_init():
-    test_engine = create_async_engine(url=TEST_DATABASE_URL, future=True)
+    test_engine = create_async_engine(url=DATABASE_URL, future=True)
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
@@ -252,6 +246,7 @@ async def test_post_patch_invalid_author(
     # when
     # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={
@@ -335,6 +330,7 @@ async def test_post_put_invalid_author(
     # when
     # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={
@@ -420,6 +416,7 @@ async def test_post_delete_invalid_author(
 
     # 다른 아이디로 수정 시도. 세션아이디 변경 됨
     test_client.base_url = "http://test/users"
+    test_client.cookies.delete("session_id")
     await test_client.post(
         "/login",
         json={

@@ -1,26 +1,22 @@
-import os
-from dotenv import load_dotenv
-from httpx import ASGITransport, AsyncClient
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, async_sessionmaker
-from sqlmodel import SQLModel
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import select
 
+from config import config
 from main import app
 from src.auth import hash_password
 from src.database import get_session
 from src.domains.user import User
 
-
-load_dotenv()
-TEST_DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = config.DATABASE_URL
 
 
 @pytest_asyncio.fixture(scope="function")
 async def test_db_init():
-    test_engine = create_async_engine(url=TEST_DATABASE_URL, future=True)
+    test_engine = create_async_engine(url=DATABASE_URL, future=True)
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
@@ -242,7 +238,7 @@ async def test_logout_ok(test_client: AsyncClient, test_session: AsyncSession):
     response = await test_client.post("/logout")
 
     # then
-    assert response.status_code == 200
+    assert response.status_code == 204
 
 
 @pytest.mark.asyncio

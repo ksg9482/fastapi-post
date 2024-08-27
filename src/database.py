@@ -1,18 +1,17 @@
 from contextlib import asynccontextmanager
-import os
-from dotenv import load_dotenv
+
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import sessionmaker
-from sqlmodel import create_engine, SQLModel
+from sqlmodel import SQLModel, create_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from config import config
 
-load_dotenv()
+# TODO import 문 포매팅이 안되어 있는듯. pre-commit run
 
-
-DATABASE_URL = os.environ["DATABASE_URL"]
-engine = AsyncEngine(create_engine(url=DATABASE_URL, future=True))
+DATABASE_URL = config.DATABASE_URL
+engine = AsyncEngine(create_engine(url=DATABASE_URL, pool_size=20, max_overflow=0))
 
 
 @asynccontextmanager
