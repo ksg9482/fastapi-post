@@ -25,3 +25,13 @@ repos:
         - "sqlmodel==0.0.19"
       args:
         - --config-file=pyproject.toml
+
+- repo: local
+  hooks:
+    - id: test
+      name: test
+      entry: pytest tests
+      language: system
+      types: [python]
+      pass_filenames: false
+      always_run: true
