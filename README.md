@@ -103,6 +103,47 @@ curl -X POST http://localhost:8000/users/login \
 http://localhost:8000/docs
 ```
 
+## System Architecture
+```mermaid
+sequenceDiagram
+    participant User as 유저
+    participant Server as 서버
+    participant RateLimiter as 처리율 제한기
+    participant API as APIs
+    participant Redis as Redis 캐시
+    participant Service as Service
+    participant DB as 데이터베이스
+
+    User->>Server: 요청
+    activate Server
+    Server->>RateLimiter: 요청 전달
+    activate RateLimiter
+    RateLimiter->>API: 요청 허용
+    deactivate RateLimiter
+    activate API
+    API->>Redis: 캐시 확인
+    activate Redis
+    alt 캐시 존재
+        Redis-->>API: 캐시된 데이터 반환
+    else 캐시 없음
+        Redis-->>API: 캐시 없음
+        API->>Service: 요청 처리
+        activate Service
+        Service->>DB: 데이터 요청
+        activate DB
+        DB-->>Service: 데이터 반환
+        deactivate DB
+        Service-->>API: 처리된 데이터
+        deactivate Service
+        API->>Redis: 결과 캐시 저장
+    end
+    deactivate Redis
+    API-->>Server: 응답 생성
+    deactivate API
+    Server-->>User: 응답
+    deactivate Server
+```
+
 ## ERD
 * mermaid.js
 ```mermaid
@@ -170,6 +211,17 @@ erDiagram
         int post_id FK "좋아요 받은 포스트 ID"
         datetime created_at "알림 생성일자"
     }
+
+    USER ||--o{ IMAGE: ""
+    IMAGE {
+        int id PK "이미지 ID"
+        str name "이미지명"
+        str save_type "이미지 저장소 분류"
+        str use_type "이미지 사용처"
+        str state "이미지 상태"
+        int user_id "이미지 업로드한 유저 ID"
+        datetime created_at "이미지 업로드일자"
+    }
 ```
 
 ## TEST
@@ -221,3 +273,11 @@ locust-test\report_worker_1.html
 ```
 locust-test\report_worker_5.html
 ```
+
+## Rate Limit
+### Rate Limit Default Config
+* REQUESTS_PER_MINUTE: 60
+* BUCKET_SIZE: 10
+
+### Rate Limit Chart
+![total_requests_per_second_1728381931 154](https://github.com/user-attachments/assets/724d2859-3743-41bf-becd-f6847f2676bc)

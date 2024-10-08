@@ -10,6 +10,8 @@ services:
     depends_on:
       - db
       - redis
+      - redis2
+      - redis3
     networks:
       - app-network
     environment:
@@ -20,6 +22,7 @@ services:
       - REQUESTS_PER_MINUTE=60
       - BUCKET_SIZE=10.0
       - GOOGLE_APPLICATION_CREDENTIALS="./keys/gcp_private_key.json"
+      - GCP_PRIVATE_KEY_BASE64=""
       - GCP_STORAGE_URL="https://storage.googleapis.com"
       - GCP_BUCKET_NAME="fastapi-post-storage"
 
@@ -42,6 +45,20 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+    networks:
+      - app-network
+
+  redis2:
+    image: redis:alpine
+    ports:
+      - "6380:6379"
+    networks:
+      - app-network
+
+  redis3:
+    image: redis:alpine
+    ports:
+      - "6381:6379"
     networks:
       - app-network
 

@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
@@ -12,8 +13,17 @@ from src.apis.post import router as post_router
 from src.apis.user import router as user_router
 from src.database import db_init
 from src.middlewares.rate_limit import BucketRateLimitMiddleware
+from src.scheduler import scheduler_shutdown
 
-app = FastAPI(lifespan=db_init)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with db_init(app):
+        async with scheduler_shutdown(app):
+            yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(router=post_router)
 app.include_router(router=user_router)

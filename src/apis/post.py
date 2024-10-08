@@ -1,10 +1,10 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from redis.asyncio import Redis
 
 from src.auth import get_current_user
-from src.database import get_redis
+from src.database import cache_servers, consistent_hash, get_redis
 from src.domains.user import Role
 from src.schemas.auth import SessionContent
 from src.schemas.common import Link
@@ -121,11 +121,31 @@ async def get_posts(
 
 @router.get("/{post_id}", response_model=PostResponse, status_code=status.HTTP_200_OK)
 async def get_post(
+    response: Response,
     post_id: int,
     service: PostService = Depends(PostService),
-    redis: Redis = Depends(get_redis),
 ) -> PostResponse:
     cache_key = f"post:post_id:{post_id}"
+
+    # 안정해시로 캐시 서버 로드밸런싱 모사
+    _, server_index = consistent_hash.get_node(cache_key)
+
+    # 캐시 미스일때도 캐시정보를 반환?
+    response.headers["X-CacheServer-Index"] = str(server_index)
+    response.headers["X-CacheServer-Count"] = str(len(cache_servers))
+    try:
+        # cache_key를 key로 입력하느라 Depends()에서 직접 호출로 변경되었음.
+        # Depends()를 유지하는 방법은 없을까?
+        redis = await get_redis(cache_key)
+
+        # 선택된 캐시 서버에 연결
+        cached_data = await redis.get(cache_key)
+
+        if cached_data:
+            return PostResponse(**json.loads(cached_data))
+    except:
+        pass
+
     try:
         cached_data = await redis.get(cache_key)
         if cached_data:
@@ -139,7 +159,7 @@ async def get_post(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 포스트입니다"
         )
 
-    response = PostResponse(
+    post_response = PostResponse(
         id=post.id,  # type: ignore
         author=post.user.nickname,
         title=post.title,
@@ -161,12 +181,12 @@ async def get_post(
 
     try:
         await redis.setex(
-            name=cache_key, time=3600, value=json.dumps(response.model_dump())
+            name=cache_key, time=3600, value=json.dumps(post_response.model_dump())
         )
     except:
         pass
 
-    return response
+    return post_response
 
 
 @router.patch("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
