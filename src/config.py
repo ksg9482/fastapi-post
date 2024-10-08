@@ -7,6 +7,7 @@ class Config(BaseSettings):
     REDIS_URL: str = Field(default="redis://localhost")
     LOCAL_UPLOAD_DIR: str = Field(default="./profile_img")
     GOOGLE_APPLICATION_CREDENTIALS: str = Field(default="")
+    GCP_PRIVATE_KEY_BASE64: str = Field(default="")
     GCP_STORAGE_URL: str = Field(default="https://storage.googleapis.com")
     GCP_BUCKET_NAME: str = Field(default="fastapi-post-storage")
 

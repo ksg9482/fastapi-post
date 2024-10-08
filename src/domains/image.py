@@ -28,5 +28,5 @@ class Image(SQLModel, table=True):  # type: ignore
     state: State = Field(default=State.PENDING)
     created_at: datetime = Field(default=func.now())
 
-    user_id: int = Field(foreign_key="user.id")
+    user_id: int | None = Field(foreign_key="user.id", default=None, nullable=True)
     user: User = Relationship(back_populates="images")

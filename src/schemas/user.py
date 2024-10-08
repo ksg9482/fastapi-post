@@ -14,6 +14,7 @@ class SignUpRequest(BaseModel):
         description="비밀번호는 8자 이상, 대문자 1자리 이상 포함",
     )
     role: Role = Field(default=Role.member)
+    img_id: int | None = Field(default=None)
 
     @field_validator("password", mode="after")
     @classmethod
