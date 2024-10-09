@@ -3,9 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from ulid import ULID
 
-from src.auth import get_current_user
 from src.domains.image import SaveType
-from src.schemas.auth import SessionContent
 from src.schemas.image import UploadProfileImgResponse
 from src.servicies.image import ImageService
 
@@ -16,10 +14,9 @@ router = APIRouter(prefix="/images", tags=["images"])
 async def upload_profile_img(
     file: UploadFile,
     service: ImageService = Depends(ImageService),
-    current_user: SessionContent = Depends(get_current_user),
     save_type: SaveType = Query(SaveType.GCP),
+    user_id: int | None = Query(None),
 ) -> UploadProfileImgResponse:
-    user_id = current_user.id
 
     allow_extension = ["jpg", "jpeg", "png"]
     if not file.content_type:
@@ -43,12 +40,12 @@ async def upload_profile_img(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="업로드 할 수 없는 이미지 확장자입니다. jpg, jpeg, png 확장자를 이용해 주세요",
         )
-    # content = await file.read()
-    filename = f"{str(ULID.from_datetime(datetime.now()))}.{file_extention}"  # uuid로 유니크한 파일명으로 변경
-
-    img_url = await service.save_profile_img(
+    filename = f"{str(ULID.from_datetime(datetime.now()))}.{file_extention}"  # ulid로 유니크한 파일명으로 변경
+    new_image = await service.save_profile_img(
         user_id=user_id, img_name=filename, img_content=file, save_type=save_type
     )
+    response = UploadProfileImgResponse(
+        id=new_image.id, img_url=new_image.name  # type: ignore
+    )
 
-    response = UploadProfileImgResponse(img_url=img_url)
     return response

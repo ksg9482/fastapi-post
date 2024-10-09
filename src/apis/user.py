@@ -33,7 +33,7 @@ async def signup(
         )
 
     new_user = await service.signup_account(
-        nickname=request.nickname, password=request.password
+        nickname=request.nickname, password=request.password, img_id=request.img_id
     )
 
     if not new_user.id:

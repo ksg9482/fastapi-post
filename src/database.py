@@ -9,6 +9,7 @@ from sqlmodel import SQLModel, create_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.config import config
+from src.consistent_hash import ConsistentHash
 
 DATABASE_URL = config.DATABASE_URL
 REDIS_URL = config.REDIS_URL
@@ -36,8 +37,26 @@ async def get_session() -> AsyncSession:  # type: ignore
         yield session
 
 
-async def get_redis() -> Redis | None:
-    if redis.connection:
-        return redis  # type: ignore
-    else:
-        return None
+class RedisConnectionPool:
+    def __init__(self, servers):
+        self.connections = {}
+        for server in servers:
+            self.connections[server] = aioredis.from_url(f"redis://{server}")
+
+    async def get_connection(self, server):
+        return await self.connections[server]
+
+
+# 캐시 서버 목록
+cache_servers = ["localhost:6379", "localhost:6380", "localhost:6381"]
+
+# 애플리케이션 시작 시 초기화
+redis_pool = RedisConnectionPool(cache_servers)
+consistent_hash = ConsistentHash(cache_servers)
+
+
+async def get_redis(key: str | None = None) -> Redis:
+    if not key:
+        key = ""
+    server, _ = consistent_hash.get_node(key)
+    return await redis_pool.get_connection(server)  # type: ignore

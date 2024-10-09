@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status
 
 from src.config import config
+from src.database import consistent_hash
 from src.schemas.common import EditRateLimitRequest
 
 router = APIRouter(tags=["common"])
@@ -27,3 +28,9 @@ async def update_rate_limit(request: EditRateLimitRequest):
     return {
         "message": f"REQUESTS_PER_MINUTE={config.REQUESTS_PER_MINUTE}, BUCKET_SIZE={config.BUCKET_SIZE}"
     }
+
+
+@router.post("/set_virtual_nodes")
+async def set_virtual_nodes(virtual_nodes: int):
+    consistent_hash.set_virtual_nodes(virtual_nodes)
+    return {"message": f"Virtual nodes set to {virtual_nodes}"}
